@@ -32,7 +32,7 @@ def get_food():
                 .filter(database.Food.date.between(date,date+datetime.timedelta(days=1))) \
                 .all()
     data = [{
-        "key": f.id, 
+        "id": f.id, 
         "date": str(f.date),
         "itemName": f.name, 
         "quantity": '%s %s'%(f.quantity,f.quantity_unit),
@@ -80,9 +80,51 @@ def new_food():
 
     return str(f.id),200
 
-@food_bp.route('/food/<id>', methods=['DELETE'])
+@food_bp.route('/food/<food_id>', methods=['PUT','POST'])
 @login_required
-def delete_food():
+def update_food(food_id): # TODO: Does not work for numerical values yet
+    data = request.get_json()
+
+    if 'itemName' not in data:
+        return "No item name listed.", 400
+
+    f = database.Food.query \
+            .filter("id='%s'" % food_id) \
+            .first()
+    if f is None:
+        return "ID not found", 404
+    if 'date' in data:
+        f.date = data['date']
+    else:
+        f.date = datetime.datetime.now()
+    if 'itemName' in data:
+        f.name = data['itemName']
+    #if 'quantity' in data:
+    #    f.quantity = data['quantity']
+    #if 'calories' in data:
+    #    f.calories = data['calories']
+    #if 'protein' in data:
+    #    f.protein = data['protein']
+    f.user_id = current_user.get_id()
+
+    database.db_session.add(f)
+    database.db_session.flush()
+    database.db_session.commit()
+
+    #if 'photos' in data:
+    #    for photo_id in data['photos']:
+    #        food_photo = database.FoodPhoto.query \
+    #            .filter("id='%s'" % photo_id) \
+    #            .first() # FIXME: text query needs to be wrapped in a text(), but I don't know where to find it
+    #        food_photo.food_id = f.id
+    #        database.db_session.flush()
+    #        database.db_session.commit()
+
+    return str(f.id),200
+
+@food_bp.route('/food/<food_id>', methods=['DELETE'])
+@login_required
+def delete_food(food_id):
     print("Requesting to delete entry %s." % request.view_args['id'])
     return "",200
 
