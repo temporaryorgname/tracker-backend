@@ -19,7 +19,7 @@ food_bp = Blueprint('food', __name__)
 
 @food_bp.route('/food')
 @login_required
-def get_food():
+def get_food(): # TODO: Filter by user
     date = request.args.get('date')
     date = datetime.datetime.strptime(date, '%Y-%m-%d')
     if date is None:
@@ -31,6 +31,11 @@ def get_food():
                 .order_by(database.Food.date.desc()) \
                 .filter(database.Food.date.between(date,date+datetime.timedelta(days=1))) \
                 .all()
+    def get_photos(food_id):
+        photos = database.FoodPhoto.query \
+                .filter_by(food_id = food_id) \
+                .all()
+        return [p.id for p in photos]
     data = [{
         "id": f.id, 
         "date": str(f.date),
@@ -38,7 +43,7 @@ def get_food():
         "quantity": '%s %s'%(f.quantity,f.quantity_unit),
         "calories": str(f.calories),
         "protein": str(f.protein),
-        "num_photos": None #TODO
+        "photos": get_photos(f.id)
     } for f in foods]
     return json.dumps(data), 200
 
@@ -111,14 +116,14 @@ def update_food(food_id): # TODO: Does not work for numerical values yet
     database.db_session.flush()
     database.db_session.commit()
 
-    #if 'photos' in data:
-    #    for photo_id in data['photos']:
-    #        food_photo = database.FoodPhoto.query \
-    #            .filter("id='%s'" % photo_id) \
-    #            .first() # FIXME: text query needs to be wrapped in a text(), but I don't know where to find it
-    #        food_photo.food_id = f.id
-    #        database.db_session.flush()
-    #        database.db_session.commit()
+    if 'photos' in data:
+        for photo_id in data['photos']:
+            food_photo = database.FoodPhoto.query \
+                .filter("id='%s'" % photo_id) \
+                .first() # FIXME: text query needs to be wrapped in a text(), but I don't know where to find it
+            food_photo.food_id = f.id
+            database.db_session.flush()
+            database.db_session.commit()
 
     return str(f.id),200
 
