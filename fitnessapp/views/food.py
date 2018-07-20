@@ -17,6 +17,26 @@ from fitnessapp import database
 
 food_bp = Blueprint('food', __name__)
 
+def food_to_json(food):
+    def get_photos(food_id):
+        photos = database.FoodPhoto.query \
+                .filter_by(food_id = food_id) \
+                .all()
+        return [p.id for p in photos]
+    def cast_decimal(dec):
+        if dec is None:
+            return None
+        return float(dec)
+    return {
+        "id": food.id, 
+        "date": str(food.date),
+        "name": food.name, 
+        "quantity": food.quantity,
+        "calories": cast_decimal(food.calories),
+        "protein": cast_decimal(food.protein),
+        "photos": get_photos(food.id)
+    }
+
 @food_bp.route('/food')
 @login_required
 def get_food(): # TODO: Filter by user
@@ -37,15 +57,7 @@ def get_food(): # TODO: Filter by user
                 .filter_by(food_id = food_id) \
                 .all()
         return [p.id for p in photos]
-    data = [{
-        "id": f.id, 
-        "date": str(f.date),
-        "name": f.name, 
-        "quantity": f.quantity,
-        "calories": f.calories,
-        "protein": f.protein,
-        "photos": get_photos(f.id)
-    } for f in foods]
+    data = [food_to_json(f) for f in foods]
     return json.dumps(data), 200
 
 @food_bp.route('/food', methods=['PUT','POST'])
