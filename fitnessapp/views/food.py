@@ -24,12 +24,13 @@ def get_food(): # TODO: Filter by user
     date = datetime.datetime.strptime(date, '%Y-%m-%d')
     if date is None:
         #foods = database.Food.query.filter_by(user_id=current_user.get_id()).all()
-        foods = database.Food.query.order_by(database.Food.date).all()
+        foods = database.Food.query \
+                .filter("user_id='%d'"%(current_user.get_id())) \
+                .order_by(database.Food.date).all()
     else:
-        #foods = database.Food.query.filter_by(date=).all()
         foods = database.Food.query \
                 .order_by(database.Food.date.desc()) \
-                .filter(database.Food.date.between(date,date+datetime.timedelta(days=1))) \
+                .filter("date='%s' AND user_id='%d'"%(date,current_user.get_id())) \
                 .all()
     def get_photos(food_id):
         photos = database.FoodPhoto.query \
@@ -39,10 +40,10 @@ def get_food(): # TODO: Filter by user
     data = [{
         "id": f.id, 
         "date": str(f.date),
-        "itemName": f.name, 
-        "quantity": '%s %s'%(f.quantity,f.quantity_unit),
-        "calories": str(f.calories),
-        "protein": str(f.protein),
+        "name": f.name, 
+        "quantity": f.quantity,
+        "calories": f.calories,
+        "protein": f.protein,
         "photos": get_photos(f.id)
     } for f in foods]
     return json.dumps(data), 200
@@ -52,7 +53,7 @@ def get_food(): # TODO: Filter by user
 def new_food():
     data = request.get_json()
 
-    if 'itemName' not in data:
+    if 'name' not in data:
         return "No item name listed.", 400
 
     f = database.Food()
@@ -60,14 +61,22 @@ def new_food():
         f.date = data['date']
     else:
         f.date = datetime.datetime.now()
-    if 'itemName' in data:
-        f.name = data['itemName']
+    if 'name' in data:
+        f.name = data['name']
     if 'quantity' in data:
         f.quantity = data['quantity']
     if 'calories' in data:
-        f.calories = data['calories']
+        try:
+            f.calories = float(data['calories'])
+        except Exception:
+            #f.calories = None
+            pass
     if 'protein' in data:
-        f.protein = data['protein']
+        try:
+            f.protein = float(data['protein'])
+        except Exception:
+            #f.protein = None
+            pass
     f.user_id = current_user.get_id()
 
     database.db_session.add(f)
@@ -90,7 +99,7 @@ def new_food():
 def update_food(food_id): # TODO: Does not work for numerical values yet
     data = request.get_json()
 
-    if 'itemName' not in data:
+    if 'name' not in data:
         return "No item name listed.", 400
 
     f = database.Food.query \
@@ -102,14 +111,20 @@ def update_food(food_id): # TODO: Does not work for numerical values yet
         f.date = data['date']
     else:
         f.date = datetime.datetime.now()
-    if 'itemName' in data:
-        f.name = data['itemName']
-    #if 'quantity' in data:
-    #    f.quantity = data['quantity']
-    #if 'calories' in data:
-    #    f.calories = data['calories']
-    #if 'protein' in data:
-    #    f.protein = data['protein']
+    if 'name' in data:
+        f.name = data['name']
+    if 'quantity' in data:
+        f.quantity = data['quantity']
+    if 'calories' in data:
+        try:
+            f.calories = float(data['calories'])
+        except Exception:
+            pass
+    if 'protein' in data:
+        try:
+            f.protein = float(data['protein'])
+        except Exception:
+            pass
     f.user_id = current_user.get_id()
 
     database.db_session.add(f)

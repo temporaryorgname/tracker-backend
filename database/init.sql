@@ -15,10 +15,10 @@ CREATE TABLE public.food
 (
 	id serial PRIMARY KEY,
 	user_id integer REFERENCES public.users(id),
-	"date" timestamp without time zone NOT NULL,
+	"date" date NOT NULL,
+	"time" time without time zone,
 	name VARCHAR(255) NOT NULL,
-	quantity numeric,
-	quantity_unit VARCHAR(32),
+	quantity VARCHAR(64),
 	calories numeric,
 	protein numeric
 );

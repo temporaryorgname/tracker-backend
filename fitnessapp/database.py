@@ -16,9 +16,9 @@ class Food(Base):
     id = Column(Integer, primary_key=True)
     user_id = Column()
     date = Column()
+    time = Column()
     name = Column()
     quantity = Column()
-    quantity_unit = Column()
     calories = Column()
     protein = Column()
 
