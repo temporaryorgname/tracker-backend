@@ -25,6 +25,7 @@ def signup():
         database.db_session.add(user)
         database.db_session.flush()
         database.db_session.commit()
+        flask_login.login_user(user)
         return "User created", 200
     else:
         return "User already exists", 400
