@@ -17,8 +17,8 @@ CORS(app, supports_credentials=True)
 app.config.from_object('config')
 app.config.from_pyfile('config.py')
 
-app.register_blueprint(auth_bp, url_prefix='/auth')
-app.register_blueprint(food_bp, url_prefix='/data')
+app.register_blueprint(auth_bp, url_prefix='/api/auth')
+app.register_blueprint(food_bp, url_prefix='/api/data')
 
 login_manager = LoginManager()
 login_manager.init_app(app)
