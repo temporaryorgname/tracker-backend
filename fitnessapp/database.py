@@ -4,7 +4,8 @@ from sqlalchemy.ext.declarative import declarative_base
 
 from sqlalchemy import Column, Integer, String
 
-engine = create_engine('postgresql://howardh:verysecurepassword@localhost:5432/howardh', convert_unicode=True)
+#engine = create_engine('postgresql://howardh:verysecurepassword@localhost:5432/howardh', convert_unicode=True)
+engine = create_engine('postgresql://howardh:verysecurepassword@logs.cl6lyqy4qgax.us-east-2.rds.amazonaws.com:5432/howardh', convert_unicode=True)
 db_session = scoped_session(sessionmaker(autocommit=False,
                                          autoflush=False,
                                          bind=engine))
