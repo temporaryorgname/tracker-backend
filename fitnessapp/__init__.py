@@ -41,6 +41,7 @@ def request_loader(request):
     return user
 
 @app.route('/', defaults={'path': ''})
+@app.route("/<string:path>")
 @app.route('/<path:path>')
 def static_file(path):
-    return app.send_static_file(path)
+    return app.send_static_file("index.html")
