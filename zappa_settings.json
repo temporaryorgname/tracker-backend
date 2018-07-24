@@ -1,0 +1,11 @@
+{
+    "production": {
+        "app_function": "fitnessapp.__init__.app",
+        "profile_name": null,
+        "project_name": "tracker-backend",
+        "runtime": "python3.6",
+        "s3_bucket": "zappa-btiey6i7e",
+		"aws_region": "us-east-1",
+		"slim_handler": true
+    }
+}
