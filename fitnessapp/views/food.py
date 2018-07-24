@@ -186,17 +186,24 @@ def get_food_photo(photo_id):
         print('Failed to load tiny thumbnail locally for file %s.' % filename)
     # Couldn't find a local image, so get it from the aws server
     filename_700 = os.path.join(app.config['UPLOAD_FOLDER'], '%s-700'%filename)
-    with open(filename_700, "wb") as f:
-        s3.Bucket(PHOTO_BUCKET_NAME).Object(filename).download_fileobj(f)
-    img = Image.open(filename_700) # FIXME: DRY
-    img.thumbnail((32,32))
-    img.save(filename_32,'jpeg')
-    buffered = BytesIO()
-    img.save(buffered, format="PNG")
-    img_str = base64.b64encode(buffered.getvalue())
+    try:
+        with open(filename_700, "wb") as f:
+            s3.Bucket(PHOTO_BUCKET_NAME).Object(filename).download_fileobj(f)
+        img = Image.open(filename_700) # FIXME: DRY
+        img.thumbnail((32,32))
+        img.save(filename_32,'jpeg')
+        buffered = BytesIO()
+        img.save(buffered, format="PNG")
+        img_str = base64.b64encode(buffered.getvalue())
+        return json.dumps({
+            'data': img_str.decode()
+        }), 200
+    except Exception:
+        print("Unable to retrieve file %s from AWS servers." % filename)
+
     return json.dumps({
-        'data': img_str.decode()
-    }), 200
+        'body': 'Unable to get file %s' % filename
+    }), 404
 
 @food_bp.route('/food/photo', methods=['PUT','POST'])
 @login_required
