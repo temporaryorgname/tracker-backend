@@ -46,4 +46,5 @@ def home_page(path):
 
 @app.route('/<path:path>')
 def static_file(path):
+    print("Static files")
     return app.send_static_file(path)

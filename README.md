@@ -16,3 +16,8 @@ To start development server: `sudo ENV/bin/python3 main.py`
   * `zappa init`
   * Modify the `zappa_settings.json` to include `"aws_region": "us-east-1"`
   * `zappa deploy production`
+
+## AWS Setup
+
+Ceate an API Gateway to the flask app.
+This gives you a Cloudfront address under `Target Domain Name`, which can your domain name can be CNAME'd to.
