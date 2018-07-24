@@ -172,8 +172,9 @@ def delete_food(food_id):
 @login_required
 def get_food_photo(photo_id):
     filename = str(photo_id)
+    filename_32 = os.path.join(app.config['UPLOAD_FOLDER'], '%s-32'%filename)
     try:
-        img = Image.open(os.path.join(app.config['UPLOAD_FOLDER'], '%s-32'%filename))
+        img = Image.open(filename_32)
         img.thumbnail((32,32))
         buffered = BytesIO()
         img.save(buffered, format="PNG")
@@ -184,8 +185,15 @@ def get_food_photo(photo_id):
     except Exception:
         print('Failed to load tiny thumbnail locally for file %s.' % filename)
     # Couldn't find a local image, so get it from the aws server
-    obj = s3.Object(PHOTO_BUCKET_NAME, filename)
-    img_str = base64.b64encode(obj.get()['Body'].read())
+    filename_700 = os.path.join(app.config['UPLOAD_FOLDER'], '%s-700'%filename)
+    with open(filename_700, "wb") as f:
+        s3.Bucket(PHOTO_BUCKET_NAME).Object(filename).download_fileobj(f)
+    img = Image.open(filename_700) # FIXME: DRY
+    img.thumbnail((32,32))
+    img.save(filename_32,'jpeg')
+    buffered = BytesIO()
+    img.save(buffered, format="PNG")
+    img_str = base64.b64encode(buffered.getvalue())
     return json.dumps({
         'data': img_str.decode()
     }), 200
@@ -194,8 +202,6 @@ def get_food_photo(photo_id):
 @login_required
 def add_food_photo():
     # check if the post request has the file part
-    print(request.get_json())
-    print(request.files)
     if 'file' not in request.files:
         return "No file provided.", 400
     file = request.files['file']
