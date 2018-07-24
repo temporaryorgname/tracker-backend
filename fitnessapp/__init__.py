@@ -40,12 +40,7 @@ def request_loader(request):
 
     return user
 
-@app.route('/')
-def home_page():
-    return jsonify({'body': 'Hello world from Flask!'})
-
-#@app.route('/')
+@app.route('/', defaults={'path': ''})
 @app.route('/<path:path>')
 def static_file(path):
-    print("Static files")
     return app.send_static_file(path)
