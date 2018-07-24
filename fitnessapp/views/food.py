@@ -13,8 +13,16 @@ from PIL import Image
 import base64
 from io import BytesIO
 
+import os
+import boto3
+
 from fitnessapp import database
 
+s3 = boto3.resource('s3')
+if 'LOGS_PHOTO_BUCKET_NAME' in os.environ:
+    PHOTO_BUCKET_NAME = os.environ['LOGS_PHOTO_BUCKET_NAME']
+else:
+    PHOTO_BUCKET_NAME = 'dev-hhixl-food-photos-700'
 food_bp = Blueprint('food', __name__)
 
 def food_to_json(food):
@@ -164,11 +172,20 @@ def delete_food(food_id):
 @login_required
 def get_food_photo(photo_id):
     filename = str(photo_id)
-    img = Image.open(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-    img.thumbnail((32,32))
-    buffered = BytesIO()
-    img.save(buffered, format="PNG")
-    img_str = base64.b64encode(buffered.getvalue())
+    try:
+        img = Image.open(os.path.join(app.config['UPLOAD_FOLDER'], '%s-32'%filename))
+        img.thumbnail((32,32))
+        buffered = BytesIO()
+        img.save(buffered, format="PNG")
+        img_str = base64.b64encode(buffered.getvalue())
+        return json.dumps({
+            'data': img_str.decode()
+        }), 200
+    except Exception:
+        print('Failed to load tiny thumbnail locally for file %s.' % filename)
+    # Couldn't find a local image, so get it from the aws server
+    obj = s3.Object(PHOTO_BUCKET_NAME, filename)
+    img_str = base64.b64encode(obj.get()['Body'].read())
     return json.dumps({
         'data': img_str.decode()
     }), 200
@@ -198,7 +215,31 @@ def add_food_photo():
         food_photo.file_name = food_photo.id
         filename = str(food_photo.file_name)
         # Save file
-        file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+        filename_original = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        filename_700 = os.path.join(app.config['UPLOAD_FOLDER'],'%s-700' % filename)
+        filename_32 = os.path.join(app.config['UPLOAD_FOLDER'],'%s-32' % filename)
+        file.save(filename_original)
+        # Resize photo
+        img = Image.open(filename_original)
+        img.thumbnail((700,700))
+        # Remove transparency if there's an alpha channel
+        if img.mode in ('RGBA', 'LA') or (img.mode == 'P' and 'transparency' in img.info):
+            print('Found transparency. Processing alpha channels.')
+            alpha = img.split()[3]
+            background = Image.new("RGB", img.size, (255, 255, 255))
+            background.paste(img, mask=alpha)
+            img = background
+        # Save smaller image
+        img.save(filename_700, 'jpeg') 
+        # Upload small image to AWS
+        with open(filename_700, 'rb') as data:
+            s3.Bucket(PHOTO_BUCKET_NAME).put_object(Key=filename, Body=data)
+        # Resize to tiny thumbnail size
+        img.thumbnail((32,32))
+        img.save(filename_32, 'jpeg') 
+        # Delete large local files
+        os.remove(filename_original)
+        os.remove(filename_700)
         # Save file name
         database.db_session.flush()
         database.db_session.commit()
