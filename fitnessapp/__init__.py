@@ -1,5 +1,5 @@
 import flask
-from flask import Flask
+from flask import Flask, jsonify
 from flask_cors import CORS
 import flask_login
 from flask_login import LoginManager
@@ -39,6 +39,10 @@ def request_loader(request):
     print(user.id)
 
     return user
+
+@app.route('/')
+def home_page(path):
+    return jsonify({'body': 'Hello world from Flask!'})
 
 @app.route('/<path:path>')
 def static_file(path):
