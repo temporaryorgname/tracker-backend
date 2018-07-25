@@ -124,6 +124,7 @@ def update_food(food_id): # TODO: Does not work for numerical values yet
 
     f = database.Food.query \
             .filter("id='%s'" % food_id) \
+            .filter("user_id='%d'"%(current_user.get_id())) \
             .first()
     if f is None:
         return "ID not found", 404
@@ -162,15 +163,48 @@ def update_food(food_id): # TODO: Does not work for numerical values yet
 
     return str(f.id),200
 
+@food_bp.route('/food', methods=['DELETE'])
+@login_required
+def delete_many_foods():
+    data = request.get_json()
+    print("Requesting to delete entry %s." % data['id'])
+
+    for food_id in data['id']:
+        f = database.Food.query \
+                .filter("id='%s'" % food_id) \
+                .filter("user_id='%d'"%(current_user.get_id())) \
+                .first()
+
+        if f is None:
+            return "Unable to find requested food entry.", 404
+
+        database.db_session.delete(f)
+
+    database.db_session.flush()
+    database.db_session.commit()
+    return "Deleted successfully",200
+
 @food_bp.route('/food/<food_id>', methods=['DELETE'])
 @login_required
 def delete_food(food_id):
-    print("Requesting to delete entry %s." % request.view_args['id'])
-    return "",200
+    print("Requesting to delete entry %s." % food_id)
+    f = database.Food.query \
+            .filter("id='%s'" % food_id) \
+            .filter("user_id='%d'"%(current_user.get_id())) \
+            .first()
+
+    if f is None:
+        return "Unable to find requested food entry.", 404
+
+    database.db_session.delete(f)
+    database.db_session.flush()
+    database.db_session.commit()
+    return "Deleted successfully",200
 
 @food_bp.route('/food/photo/<int:photo_id>', methods=['GET'])
 @login_required
 def get_food_photo(photo_id):
+    # TODO: Check that the photo belongs to that user
     filename = str(photo_id)
     filename_32 = os.path.join(app.config['UPLOAD_FOLDER'], '%s-32'%filename)
     try:
