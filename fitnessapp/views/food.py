@@ -211,12 +211,13 @@ def get_food_photo(photo_id):
     if fp is None:
         return "File ID not found.", 404
 
-    f = database.Food.query \
-            .filter("id='%s'" % fp.food_id) \
-            .filter("user_id='%d'"%(current_user.get_id())) \
-            .first()
-    if f is None:
-        return "No photo with matching id for user.", 404
+    # FIXME: Can't do this, because the photo isn't immediately attached to a food item
+    #f = database.Food.query \
+    #        .filter("id='%s'" % fp.food_id) \
+    #        .filter("user_id='%d'"%(current_user.get_id())) \
+    #        .first()
+    #if f is None:
+    #    return "No photo with matching id for user.", 404
 
     filename = fp.file_name
     filename_32 = os.path.join(app.config['UPLOAD_FOLDER'], '%s-32'%filename)
