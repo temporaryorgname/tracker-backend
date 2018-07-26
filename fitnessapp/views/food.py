@@ -204,8 +204,21 @@ def delete_food(food_id):
 @food_bp.route('/food/photo/<int:photo_id>', methods=['GET'])
 @login_required
 def get_food_photo(photo_id):
-    # TODO: Check that the photo belongs to that user
     filename = str(photo_id)
+    fp = database.FoodPhoto.query \
+            .filter("id='%s'" % photo_id) \
+            .first()
+    if fp is None:
+        return "File ID not found.", 404
+
+    f = database.Food.query \
+            .filter("id='%s'" % fp.food_id) \
+            .filter("user_id='%d'"%(current_user.get_id())) \
+            .first()
+    if f is None:
+        return "No photo with matching id for user.", 404
+
+    filename = fp.file_name
     filename_32 = os.path.join(app.config['UPLOAD_FOLDER'], '%s-32'%filename)
     try:
         img = Image.open(filename_32)
