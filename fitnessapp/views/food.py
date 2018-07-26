@@ -47,18 +47,18 @@ def food_to_json(food):
 
 @food_bp.route('/food')
 @login_required
-def get_food(): # TODO: Filter by user
+def get_food():
     date = request.args.get('date')
     date = datetime.datetime.strptime(date, '%Y-%m-%d')
     if date is None:
         #foods = database.Food.query.filter_by(user_id=current_user.get_id()).all()
         foods = database.Food.query \
-                .filter("user_id='%d'"%(current_user.get_id())) \
+                .filter_by(food_user_id=current_user.get_id()) \
                 .order_by(database.Food.date).all()
     else:
         foods = database.Food.query \
                 .order_by(database.Food.date.desc()) \
-                .filter("date='%s' AND user_id='%d'"%(date,current_user.get_id())) \
+                .filter_by(date=date, user_id=current_user.get_id()) \
                 .all()
     def get_photos(food_id):
         photos = database.FoodPhoto.query \
@@ -106,8 +106,8 @@ def new_food():
     if 'photos' in data:
         for photo_id in data['photos']:
             food_photo = database.FoodPhoto.query \
-                .filter("id='%s'" % photo_id) \
-                .first() # FIXME: text query needs to be wrapped in a text(), but I don't know where to find it
+                .filter_by(id=photo_id) \
+                .first()
             food_photo.food_id = f.id
             database.db_session.flush()
             database.db_session.commit()
@@ -123,8 +123,8 @@ def update_food(food_id): # TODO: Does not work for numerical values yet
         return "No item name listed.", 400
 
     f = database.Food.query \
-            .filter("id='%s'" % food_id) \
-            .filter("user_id='%d'"%(current_user.get_id())) \
+            .filter_by(id=food_id) \
+            .filter_by(user_id=current_user.get_id()) \
             .first()
     if f is None:
         return "ID not found", 404
@@ -155,8 +155,8 @@ def update_food(food_id): # TODO: Does not work for numerical values yet
     if 'photos' in data:
         for photo_id in data['photos']:
             food_photo = database.FoodPhoto.query \
-                .filter("id='%s'" % photo_id) \
-                .first() # FIXME: text query needs to be wrapped in a text(), but I don't know where to find it
+                .filter_by(id=photo_id) \
+                .first()
             food_photo.food_id = f.id
             database.db_session.flush()
             database.db_session.commit()
@@ -171,8 +171,8 @@ def delete_many_foods():
 
     for food_id in data['id']:
         f = database.Food.query \
-                .filter("id='%s'" % food_id) \
-                .filter("user_id='%d'"%(current_user.get_id())) \
+                .filter_by(id=food_id) \
+                .filter_by(user_id=current_user.get_id()) \
                 .first()
 
         if f is None:
@@ -189,8 +189,8 @@ def delete_many_foods():
 def delete_food(food_id):
     print("Requesting to delete entry %s." % food_id)
     f = database.Food.query \
-            .filter("id='%s'" % food_id) \
-            .filter("user_id='%d'"%(current_user.get_id())) \
+            .filter_by(id=food_id) \
+            .filter_by(user_id=current_user.get_id()) \
             .first()
 
     if f is None:
@@ -206,15 +206,15 @@ def delete_food(food_id):
 def get_food_photo(photo_id):
     filename = str(photo_id)
     fp = database.FoodPhoto.query \
-            .filter("id='%s'" % photo_id) \
+            .filter_by(id=photo_id) \
             .first()
     if fp is None:
         return "File ID not found.", 404
 
     # FIXME: Can't do this, because the photo isn't immediately attached to a food item
     #f = database.Food.query \
-    #        .filter("id='%s'" % fp.food_id) \
-    #        .filter("user_id='%d'"%(current_user.get_id())) \
+    #        .filter_by(id=fp.food_id) \
+    #        .filter_by(user_id=current_user.get_id()) \
     #        .first()
     #if f is None:
     #    return "No photo with matching id for user.", 404
