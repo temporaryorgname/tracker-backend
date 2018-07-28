@@ -21,10 +21,12 @@ body_bp = Blueprint('body', __name__)
 def get_bodyweights():
     weights = database.Bodyweight.query \
             .filter_by(user_id=current_user.get_id()) \
-            .order_by(database.Bodyweight.date).all()
+            .order_by(database.Bodyweight.date.desc()) \
+            .order_by(database.Bodyweight.time.desc()) \
+            .all()
     return json.dumps([{
         'date': str(w.date),
-        'time': w.time,
+        'time': str(w.time) if w.time is not None else '',
         'bodyweight': float(w.bodyweight)
     } for w in weights]), 200
 
