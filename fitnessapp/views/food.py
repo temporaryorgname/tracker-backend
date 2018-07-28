@@ -53,7 +53,7 @@ def get_food():
     if date is None:
         #foods = database.Food.query.filter_by(user_id=current_user.get_id()).all()
         foods = database.Food.query \
-                .filter_by(food_user_id=current_user.get_id()) \
+                .filter_by(user_id=current_user.get_id()) \
                 .order_by(database.Food.date).all()
     else:
         foods = database.Food.query \

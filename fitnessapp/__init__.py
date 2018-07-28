@@ -5,6 +5,7 @@ import flask_login
 from flask_login import LoginManager
 from fitnessapp.views.auth import auth_bp
 from fitnessapp.views.food import food_bp
+from fitnessapp.views.body import body_bp
 
 from fitnessapp import database
 
@@ -19,6 +20,7 @@ app.config.from_pyfile('config.py')
 
 app.register_blueprint(auth_bp, url_prefix='/api/auth')
 app.register_blueprint(food_bp, url_prefix='/api/data')
+app.register_blueprint(body_bp, url_prefix='/api/data')
 
 login_manager = LoginManager()
 login_manager.init_app(app)

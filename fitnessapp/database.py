@@ -55,3 +55,11 @@ class User(Base):
 
     def get_id(self):
         return self.id
+
+class Bodyweight(Base):
+    __tablename__ = 'body'
+    id = Column(Integer, primary_key=True)
+    user_id = Column()
+    date = Column()
+    time = Column()
+    bodyweight = Column()
