@@ -25,6 +25,7 @@ def get_bodyweights():
             .order_by(database.Bodyweight.time.desc()) \
             .all()
     return json.dumps([{
+        'id': w.id,
         'date': str(w.date),
         'time': str(w.time) if w.time is not None else '',
         'bodyweight': float(w.bodyweight)
@@ -35,7 +36,6 @@ def get_bodyweights():
 @login_required
 def new_bodyweights():
     data = request.get_json()
-    print(data)
     bw = database.Bodyweight()
 
     try:
@@ -60,3 +60,20 @@ def new_bodyweights():
     database.db_session.commit()
 
     return 'Body weight added successfully.', 200
+
+@body_bp.route('/body/weight/<weight_id>', methods=['DELETE'])
+@login_required
+def delete_bodyweight(weight_id):
+    print("Requesting to delete entry %s." % weight_id)
+    weight = database.Bodyweight.query \
+            .filter_by(id=weight_id) \
+            .filter_by(user_id=current_user.get_id()) \
+            .first()
+
+    if weight is None:
+        return "Unable to find requested bodyweight entry.", 404
+
+    database.db_session.delete(weight)
+    database.db_session.flush()
+    database.db_session.commit()
+    return "Deleted successfully",200
