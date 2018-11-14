@@ -306,11 +306,16 @@ def add_food_photo():
         database.db_session.commit()
         return json.dumps({'id': food_photo.id}),200
 
-#@db_bp.route('/bodystats')
-#@login_required
-#def account():
-#    return json.dumps([{"date": "day 1", "weight": 150},
-#        {"date": "day 2", "weight": 150},
-#        {"date": "day 3", "weight": 150},
-#        {"date": "day 4", "weight": 150},
-#        {"date": "day 5", "weight": 150}])
+@food_bp.route('/food/search', methods=['GET'])
+@login_required
+def search_food():
+    if 'q' not in request.args:
+        return 'Invalid request. A query is required.', 400
+    query = request.args['q']
+    foods = database.Food.query \
+            .order_by(database.Food.date.desc()) \
+            .filter_by(user_id=current_user.get_id()) \
+            .filter(database.Food.name.ilike('%{0}%'.format(query))) \
+            .all()
+    data = [food_to_json(f) for f in foods]
+    return json.dumps(data), 200
