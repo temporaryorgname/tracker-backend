@@ -316,6 +316,7 @@ def search_food():
             .order_by(database.Food.date.desc()) \
             .filter_by(user_id=current_user.get_id()) \
             .filter(database.Food.name.ilike('%{0}%'.format(query))) \
+            .limit(5) \
             .all()
     data = [food_to_json(f) for f in foods]
     return json.dumps(data), 200
