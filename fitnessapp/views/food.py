@@ -75,6 +75,8 @@ def new_food():
 
     if 'name' not in data:
         return "No item name listed.", 400
+    if len(data['name']) == 0:
+        return 'Invalid food name.', 400
 
     f = database.Food()
     if 'date' in data:
@@ -89,13 +91,11 @@ def new_food():
         try:
             f.calories = float(data['calories'])
         except Exception:
-            #f.calories = None
             pass
     if 'protein' in data:
         try:
             f.protein = float(data['protein'])
         except Exception:
-            #f.protein = None
             pass
     f.user_id = current_user.get_id()
 
