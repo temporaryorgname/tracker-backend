@@ -201,6 +201,21 @@ def delete_food(food_id):
     database.db_session.commit()
     return "Deleted successfully",200
 
+@food_bp.route('/food/search', methods=['GET'])
+@login_required
+def search_food():
+    if 'q' not in request.args:
+        return 'Invalid request. A query is required.', 400
+    query = request.args['q']
+    foods = database.Food.query \
+            .order_by(database.Food.date.desc()) \
+            .filter_by(user_id=current_user.get_id()) \
+            .filter(database.Food.name.ilike('%{0}%'.format(query))) \
+            .limit(5) \
+            .all()
+    data = [food_to_json(f) for f in foods]
+    return json.dumps(data), 200
+
 @food_bp.route('/food/photo/<int:photo_id>', methods=['GET'])
 @login_required
 def get_food_photo(photo_id):
@@ -306,17 +321,7 @@ def add_food_photo():
         database.db_session.commit()
         return json.dumps({'id': food_photo.id}),200
 
-@food_bp.route('/food/search', methods=['GET'])
+@food_bp.route('/food/photo/predict/<int:photo_id>', methods=['GET'])
 @login_required
-def search_food():
-    if 'q' not in request.args:
-        return 'Invalid request. A query is required.', 400
-    query = request.args['q']
-    foods = database.Food.query \
-            .order_by(database.Food.date.desc()) \
-            .filter_by(user_id=current_user.get_id()) \
-            .filter(database.Food.name.ilike('%{0}%'.format(query))) \
-            .limit(5) \
-            .all()
-    data = [food_to_json(f) for f in foods]
-    return json.dumps(data), 200
+def predict_class(photo_id):
+    return json.dumps([]), 200
