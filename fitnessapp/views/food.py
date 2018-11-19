@@ -140,12 +140,12 @@ def update_food(food_id): # TODO: Does not work for numerical values yet
         try:
             f.calories = float(data['calories'])
         except Exception:
-            pass
+            f.calories = None # Handles the case where data['calores'] is an empty string
     if 'protein' in data:
         try:
             f.protein = float(data['protein'])
         except Exception:
-            pass
+            f.protein = None
     f.user_id = current_user.get_id()
 
     database.db_session.add(f)
