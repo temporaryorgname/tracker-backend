@@ -50,10 +50,10 @@ def get_current_session():
         print(current_user)
         return "%s" % current_user.get_id(), 200
     except:
-        return "None", 200
+        return "{}", 200
 
 @auth_bp.route('/logout', methods=['GET', 'POST'])
 @login_required
 def logout():
     flask_login.logout_user()
-    return 'Logged out'
+    return '{}', 200
