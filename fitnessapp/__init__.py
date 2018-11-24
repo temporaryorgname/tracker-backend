@@ -34,12 +34,14 @@ def load_user(user_id):
 @login_manager.request_loader
 def request_loader(request):
     email = request.form.get('email')
+    password = request.form.get('password')
+    if email is None or password is None:
+        return
 
     user = database.User.query.filter_by(email=email)
     if user is None:
         return
-
-    user.authenticated = request.form['password'] == user.password
+    user.authenticated = password == user.password
     print(user.id)
 
     return user

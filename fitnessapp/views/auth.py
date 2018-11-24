@@ -36,21 +36,23 @@ def login():
     email = data['email']
     user = database.User.query.filter_by(email=email).first()
     if user is None:
-        return "Incorrect email/password", 403
+        return json.dumps({'error': "Incorrect email/password"}), 403
     if bcrypt.checkpw(data['password'].encode('utf-8'), user.password.tobytes()):
         flask_login.login_user(user)
         print("successful login")
-        return json.dumps('Login successful'), 200
+        return json.dumps(user.id), 200
     print("failed login")
-    return 'Bad login', 403
+    return json.dumps({'error': 'Bad login'}), 403
 
 @auth_bp.route('/current_session', methods=['GET'])
 def get_current_session():
     try:
         print(current_user)
-        return "%s" % current_user.get_id(), 200
+        if current_user.get_id() is not None:
+            return "%s" % current_user.get_id(), 200
     except:
-        return "{}", 200
+        pass
+    return "{}", 200
 
 @auth_bp.route('/logout', methods=['GET', 'POST'])
 @login_required
