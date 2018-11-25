@@ -35,13 +35,16 @@ def signup():
 def login():
     data = request.get_json()
     email = data['email']
+    session.permanent = False
+    if 'permanent' in data:
+        permanent = data['permanent']
+        session.permanent = permanent
     user = database.User.query.filter_by(email=email).first()
     if user is None:
         return json.dumps({'error': "Incorrect email/password"}), 403
     if bcrypt.checkpw(data['password'].encode('utf-8'), user.password.tobytes()):
         flask_login.login_user(user)
         print("successful login")
-        session.permanent = True
         return json.dumps(user.id), 200
     print("failed login")
     return json.dumps({'error': 'Bad login'}), 403
