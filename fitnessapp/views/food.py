@@ -4,6 +4,7 @@ from flask import request
 from flask import current_app as app
 from flask_login import login_required, current_user
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy.sql import func
 from werkzeug.utils import secure_filename
 
 import datetime
@@ -25,16 +26,17 @@ else:
     PHOTO_BUCKET_NAME = 'dev-hhixl-food-photos-700'
 food_bp = Blueprint('food', __name__)
 
+def cast_decimal(dec):
+    if dec is None:
+        return None
+    return float(dec)
+
 def food_to_json(food):
     def get_photos(food_id):
         photos = database.FoodPhoto.query \
                 .filter_by(food_id = food_id) \
                 .all()
         return [p.id for p in photos]
-    def cast_decimal(dec):
-        if dec is None:
-            return None
-        return float(dec)
     return {
         "id": food.id, 
         "date": str(food.date),
@@ -208,12 +210,31 @@ def search_food():
         return 'Invalid request. A query is required.', 400
     query = request.args['q']
     foods = database.Food.query \
-            .order_by(database.Food.date.desc()) \
+            .with_entities(
+                    func.mode().within_group(database.Food.name),
+                    database.Food.quantity,
+                    database.Food.calories,
+                    database.Food.protein,
+                    func.count('*')
+            ) \
             .filter_by(user_id=current_user.get_id()) \
             .filter(database.Food.name.ilike('%{0}%'.format(query))) \
+            .group_by(
+                    func.lower(database.Food.name),
+                    database.Food.quantity,
+                    database.Food.calories,
+                    database.Food.protein,
+            ) \
+            .order_by(func.count('*').desc()) \
             .limit(5) \
             .all()
-    data = [food_to_json(f) for f in foods]
+    data = [{
+        'name': f[0],
+        'quantity': f[1],
+        'calories': cast_decimal(f[2]),
+        'protein': cast_decimal(f[3]),
+        'count': f[4]
+    } for f in foods]
     return json.dumps(data), 200
 
 @food_bp.route('/food/photo/<int:photo_id>', methods=['GET'])
