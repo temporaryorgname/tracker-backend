@@ -36,11 +36,14 @@ def get_user(user_id):
         return json.dumps({
             'id': user.id,
             'name': user.name,
-            'email': user.email
+            'email': user.email,
+            'verified_email': user.verified_email,
+            'last_activity': user.last_activity
         }), 200
     else:
         return json.dumps({
             'id': user.id,
-            'name': user.name
+            'name': user.name,
+            'last_activity': user.last_activity
         }), 200
 

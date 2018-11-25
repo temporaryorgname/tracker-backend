@@ -2,6 +2,7 @@ import flask
 from flask import render_template
 from flask import Blueprint
 from flask import request
+from flask import session
 import flask_login
 from flask_login import login_required, current_user, login_user
 
@@ -40,6 +41,7 @@ def login():
     if bcrypt.checkpw(data['password'].encode('utf-8'), user.password.tobytes()):
         flask_login.login_user(user)
         print("successful login")
+        session.permanent = True
         return json.dumps(user.id), 200
     print("failed login")
     return json.dumps({'error': 'Bad login'}), 403

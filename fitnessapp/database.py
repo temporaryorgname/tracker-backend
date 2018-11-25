@@ -28,6 +28,7 @@ class Food(Base):
     quantity = Column()
     calories = Column()
     protein = Column()
+    parent_id = Column()
 
 class FoodPhoto(Base):
     __tablename__ = 'food_photos'
@@ -41,6 +42,8 @@ class User(Base):
     name = Column()
     email = Column()
     password = Column()
+    last_activity = Column()
+    verified_email = Column()
     active = False
     authenticated = False
 
