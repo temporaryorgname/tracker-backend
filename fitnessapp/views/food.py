@@ -240,6 +240,12 @@ def search_food():
 @food_bp.route('/food/photo/<int:photo_id>', methods=['GET'])
 @login_required
 def get_food_photo(photo_id):
+    size = int(request.args.get('size'))
+    if size is None:
+        size = 32
+    if size not in [32,700]:
+        return json.dumps({'error': 'Unsupported size.'}), 400
+
     filename = str(photo_id)
     fp = database.FoodPhoto.query \
             .filter_by(id=photo_id) \
@@ -247,47 +253,49 @@ def get_food_photo(photo_id):
     if fp is None:
         return "File ID not found.", 404
 
-    # FIXME: Can't do this, because the photo isn't immediately attached to a food item
-    #f = database.Food.query \
-    #        .filter_by(id=fp.food_id) \
-    #        .filter_by(user_id=current_user.get_id()) \
-    #        .first()
-    #if f is None:
-    #    return "No photo with matching id for user.", 404
+    def get_Local_image(size):
+        filename = os.path.join(
+                app.config['UPLOAD_FOLDER'],
+                '%s-%s'%(fp.file_name, size))
+        try:
+            return Image.open(filename)
+        except Exception:
+            print('Failed to load tiny thumbnail locally for file %s.' % filename)
+    def get_s3_image(size):
+        filename = os.path.join(
+                app.config['UPLOAD_FOLDER'],
+                '%s-700'%(fp.file_name))
+        filename_resized = os.path.join(
+                app.config['UPLOAD_FOLDER'],
+                '%s-%s'%(fp.file_name,size))
+        try:
+            with open(filename, "wb") as f:
+                s3.Bucket(PHOTO_BUCKET_NAME) \
+                  .Object(str(photo_id)) \
+                  .download_fileobj(f)
+            img = Image.open(filename)
+            if size == 700:
+                return img
+            img.thumbnail((size,size))
+            img.save(filename_resized,'PNG')
+            return img
+        except Exception as e:
+            print("Unable to retrieve file %s from AWS servers." % filename)
 
-    filename = fp.file_name
-    filename_32 = os.path.join(app.config['UPLOAD_FOLDER'], '%s-32'%filename)
-    try:
-        img = Image.open(filename_32)
-        img.thumbnail((32,32))
-        buffered = BytesIO()
-        img.save(buffered, format="PNG")
-        img_str = base64.b64encode(buffered.getvalue())
+    img = get_Local_image(size)
+    if img is None:
+        img = get_s3_image(size)
+    if img is None:
         return json.dumps({
-            'data': img_str.decode()
-        }), 200
-    except Exception:
-        print('Failed to load tiny thumbnail locally for file %s.' % filename)
-    # Couldn't find a local image, so get it from the aws server
-    filename_700 = os.path.join(app.config['UPLOAD_FOLDER'], '%s-700'%filename)
-    try:
-        with open(filename_700, "wb") as f:
-            s3.Bucket(PHOTO_BUCKET_NAME).Object(filename).download_fileobj(f)
-        img = Image.open(filename_700) # FIXME: DRY
-        img.thumbnail((32,32))
-        img.save(filename_32,'jpeg')
-        buffered = BytesIO()
-        img.save(buffered, format="PNG")
-        img_str = base64.b64encode(buffered.getvalue())
-        return json.dumps({
-            'data': img_str.decode()
-        }), 200
-    except Exception:
-        print("Unable to retrieve file %s from AWS servers." % filename)
+            'error': 'Unable to retrieve file %s' % filename
+        }), 404
 
+    buffered = BytesIO()
+    img.save(buffered, format="PNG")
+    img_str = base64.b64encode(buffered.getvalue())
     return json.dumps({
-        'body': 'Unable to get file %s' % filename
-    }), 404
+        'data': img_str.decode()
+    }), 200
 
 @food_bp.route('/food/photo', methods=['PUT','POST'])
 @login_required
@@ -305,6 +313,7 @@ def add_food_photo():
         # Create food entry
         food_photo = database.FoodPhoto()
         food_photo.file_name = ""
+        food_photo.user_id = current_user.get_id()
         database.db_session.add(food_photo)
         database.db_session.flush()
         database.db_session.commit()
@@ -341,6 +350,21 @@ def add_food_photo():
         database.db_session.flush()
         database.db_session.commit()
         return json.dumps({'id': food_photo.id}),200
+
+@food_bp.route('/food/photo/by_user/<int:user_id>', methods=['GET'])
+@login_required
+def get_food_photo_by_user(user_id):
+    if user_id == current_user.get_id():
+        photo_ids = database.FoodPhoto.query \
+                .with_entities(database.FoodPhoto.id)\
+                .filter_by(user_id=user_id) \
+                .all()
+        photo_ids = [p[0] for p in photo_ids]
+        return json.dumps(photo_ids), 200
+    else:
+        return json.dumps({
+            'error': 'Permission denied'
+        }), 403
 
 @food_bp.route('/food/photo/predict/<int:photo_id>', methods=['GET'])
 @login_required

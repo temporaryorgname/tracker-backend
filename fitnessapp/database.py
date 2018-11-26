@@ -35,6 +35,7 @@ class FoodPhoto(Base):
     id = Column(Integer, primary_key=True)
     food_id = Column()
     file_name = Column()
+    user_id = Column()
 
 class User(Base):
     __tablename__ = 'users'

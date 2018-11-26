@@ -11,6 +11,12 @@ ALTER TABLE public.users ADD last_activity timestamp;
 
 ALTER TABLE public.food ADD parent_id integer REFERENCES public.food(id);
 
+ALTER TABLE public.food_photos ADD user_id integer REFERENCES public.users(id);
+UPDATE public.food_photos
+   SET user_id=(
+	SELECT user_id FROM public.food WHERE public.food.id = food_id
+   );
+
 CREATE TABLE public.tags (
 	id serial PRIMARY KEY,
 	user_id integer REFERENCES public.users(id),
