@@ -37,6 +37,23 @@ class FoodPhoto(Base):
     file_name = Column()
     user_id = Column()
 
+class Tag(Base):
+    __tablename__ = 'tags'
+    id = Column(Integer, primary_key=True)
+    user_id = Column()
+    parent_id = Column()
+    tag = Column()
+    description = Column()
+
+class FoodPhotoLabel(Base):
+    __tablename__ = 'food_photo_labels'
+    id = Column(Integer, primary_key=True)
+    user_id = Column()
+    photo_id = Column()
+    tag_id = Column()
+    bounding_box = Column()
+    bounding_polygon = Column()
+
 class User(Base):
     __tablename__ = 'users'
     id = Column(Integer, primary_key=True)

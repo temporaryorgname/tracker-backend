@@ -370,3 +370,91 @@ def get_food_photo_by_user(user_id):
 @login_required
 def predict_class(photo_id):
     return json.dumps([]), 200
+
+def tag_to_json(tag):
+    return {
+        'id': tag.id,
+        'user_id': tag.user_id,
+        'parent_id': tag.parent_id,
+        'tag': tag.tag,
+        'description': tag.description
+    }
+
+@food_bp.route('/tags', methods=['GET'])
+@login_required
+def get_all_tags():
+    user_id = current_user.get_id()
+    # TODO: Filter by user
+    tags = database.Tag.query.all()
+    tags = [tag_to_json(t) for t in tags]
+    return json.dumps(tags), 200
+
+@food_bp.route('/tags', methods=['POST','PUT'])
+@login_required
+def create_tag():
+    data = request.get_json()
+
+    tag = database.Tag()
+    tag.user_id = current_user.get_id()
+    tag.parent_id = data['parent_id']
+    tag.tag = data['tag']
+    tag.description = data['description']
+
+    database.db_session.add(tag)
+    database.db_session.flush()
+    database.db_session.commit()
+
+    return json.dumps({'message': 'Success?', 'id': tag.id}), 200
+
+@food_bp.route('/tags/search', methods=['GET'])
+@login_required
+def search_tags():
+    if 'q' not in request.args:
+        return 'Invalid request. A query is required.', 400
+    query = request.args['q']
+    tags = database.Tag.query \
+            .filter_by(user_id=current_user.get_id()) \
+            .filter(database.Tag.tag.ilike('%{0}%'.format(query))) \
+            .limit(5) \
+            .all()
+    data = [{
+        'id': t.id,
+        'tag': t.tag,
+        'parent_id': t.parent_id
+    } for t in tags]
+    return json.dumps(data), 200
+
+@food_bp.route('/food/photo/<photo_id>/labels', methods=['GET'])
+@login_required
+def get_food_photo_tags(photo_id):
+    labels = database.FoodPhotoLabel.query \
+            .filter_by(photo_id=photo_id) \
+            .filter_by(user_id=current_user.get_id()) \
+            .all()
+    labels = [{
+        'tag_id': l.tag_id,
+        'box': l.box,
+        'polygon': l.polygon
+    } for l in labels]
+
+    return json.dumps(labels),200
+
+@food_bp.route('/food/photo/<photo_id>/labels', methods=['POST','PUT'])
+@login_required
+def create_food_photo_labels(photo_id):
+    data = request.get_json()
+
+    label = database.FoodPhotoLabel()
+    label.user_id = current_user.get_id();
+    label.photo_id = photo_id
+    label.tag_id = data['tag_id']
+    if 'bounding_box' in data:
+        label.bounding_box = data['bounding_box']
+    if 'bounding_polygon' in data:
+        label.bounding_polygon = data['bounding_polygon']
+
+    database.db_session.add(label)
+    database.db_session.flush()
+    database.db_session.commit()
+
+    return json.dumps({'message': 'Success?', 'id': label.id}), 200
