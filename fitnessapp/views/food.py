@@ -432,9 +432,10 @@ def get_food_photo_tags(photo_id):
             .filter_by(user_id=current_user.get_id()) \
             .all()
     labels = [{
+        'id': l.id,
         'tag_id': l.tag_id,
-        'box': l.box,
-        'polygon': l.polygon
+        'bounding_box': l.bounding_box,
+        'bounding_polygon': l.bounding_polygon
     } for l in labels]
 
     return json.dumps(labels),200
@@ -454,6 +455,45 @@ def create_food_photo_labels(photo_id):
         label.bounding_polygon = data['bounding_polygon']
 
     database.db_session.add(label)
+    database.db_session.flush()
+    database.db_session.commit()
+
+    return json.dumps({'message': 'Success?', 'id': label.id}), 200
+
+@food_bp.route('/food/photo/<photo_id>/labels/<label_id>', methods=['POST','PUT'])
+@login_required
+def update_food_photo_labels(photo_id,label_id):
+    data = request.get_json()
+
+    label = database.FoodPhotoLabel.query \
+            .filter_by(id=label_id) \
+            .filter_by(photo_id=photo_id) \
+            .filter_by(user_id=current_user.get_id()) \
+            .one()
+
+    label.photo_id = data['photo_id']
+    label.tag_id = data['tag_id']
+    if 'bounding_box' in data:
+        label.bounding_box = data['bounding_box']
+    if 'bounding_polygon' in data:
+        label.bounding_polygon = data['bounding_polygon']
+
+    database.db_session.add(label)
+    database.db_session.flush()
+    database.db_session.commit()
+
+    return json.dumps({'message': 'Success?', 'id': label.id}), 200
+
+@food_bp.route('/food/photo/<int:photo_id>/labels/<int:label_id>', methods=['DELETE'])
+@login_required
+def delete_food_photo_labels(photo_id,label_id):
+    print('Deleting label?')
+    label = database.FoodPhotoLabel.query \
+            .filter_by(id=label_id) \
+            .filter_by(photo_id=photo_id) \
+            .filter_by(user_id=current_user.get_id()) \
+            .one()
+    database.db_session.delete(label)
     database.db_session.flush()
     database.db_session.commit()
 
