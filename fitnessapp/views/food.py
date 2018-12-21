@@ -304,6 +304,7 @@ def add_food_photo():
     if 'file' not in request.files:
         return "No file provided.", 400
     file = request.files['file']
+    time_taken = request.form.get('time_taken')
 
     # if user does not select file, browser also
     # submit an empty part without filename
@@ -314,6 +315,8 @@ def add_food_photo():
         food_photo = database.FoodPhoto()
         food_photo.file_name = ""
         food_photo.user_id = current_user.get_id()
+        food_photo.upload_time = datetime.datetime.utcnow()
+        food_photo.time_taken = time_taken
         database.db_session.add(food_photo)
         database.db_session.flush()
         database.db_session.commit()

@@ -36,6 +36,8 @@ class FoodPhoto(Base):
     food_id = Column()
     file_name = Column()
     user_id = Column()
+    time_taken = Column()
+    upload_time = Column()
 
 class Tag(Base):
     __tablename__ = 'tags'
