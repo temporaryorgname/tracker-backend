@@ -3,6 +3,8 @@ from flask import Flask, jsonify
 from flask_cors import CORS
 import flask_login
 from flask_login import LoginManager
+import sqlalchemy
+
 from fitnessapp.views.auth import auth_bp
 from fitnessapp.views.user import user_bp
 from fitnessapp.views.food import food_bp
@@ -51,3 +53,16 @@ def request_loader(request):
 @app.route('/<path:path>')
 def static_file(path):
     return app.send_static_file("index.html")
+
+@app.errorhandler(sqlalchemy.exc.TimeoutError)
+def timeouterror_handler(error):
+    return json.dumps({
+        'error': 'Server too busy. Try again later.'
+    }), 503
+
+@app.errorhandler(Exception)
+def exception_handler(error):
+    print(error)
+    return json.dumps({
+        'error': 'Unhandled error encountered'
+    }), 500
