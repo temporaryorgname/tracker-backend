@@ -26,27 +26,6 @@ else:
     PHOTO_BUCKET_NAME = 'dev-hhixl-food-photos-700'
 food_bp = Blueprint('food', __name__)
 
-def cast_decimal(dec):
-    if dec is None:
-        return None
-    return float(dec)
-
-def food_to_json(food):
-    def get_photos(food_id):
-        photos = database.FoodPhoto.query \
-                .filter_by(food_id = food_id) \
-                .all()
-        return [p.id for p in photos]
-    return {
-        "id": food.id, 
-        "date": str(food.date),
-        "name": food.name, 
-        "quantity": food.quantity,
-        "calories": cast_decimal(food.calories),
-        "protein": cast_decimal(food.protein),
-        "photos": get_photos(food.id)
-    }
-
 @food_bp.route('/food')
 @login_required
 def get_food():
@@ -67,7 +46,7 @@ def get_food():
                 .filter_by(food_id = food_id) \
                 .all()
         return [p.id for p in photos]
-    data = [food_to_json(f) for f in foods]
+    data = [f.to_dict() for f in foods]
     return json.dumps(data), 200
 
 @food_bp.route('/food', methods=['PUT','POST'])
@@ -228,13 +207,19 @@ def search_food():
             .order_by(func.count('*').desc()) \
             .limit(5) \
             .all()
-    data = [{
-        'name': f[0],
-        'quantity': f[1],
-        'calories': cast_decimal(f[2]),
-        'protein': cast_decimal(f[3]),
-        'count': f[4]
-    } for f in foods]
+    def cast_decimal(dec):
+        if dec is None:
+            return None
+        return float(dec)
+    def to_dict(f):
+        return {
+            'name': f[0],
+            'quantity': f[1],
+            'calories': cast_decimal(f[2]),
+            'protein': cast_decimal(f[3]),
+            'count': f[4]
+        }
+    data = [to_dict(f) for f in foods]
     return json.dumps(data), 200
 
 @food_bp.route('/food/photo/<int:photo_id>', methods=['GET'])
@@ -304,7 +289,6 @@ def add_food_photo():
     if 'file' not in request.files:
         return "No file provided.", 400
     file = request.files['file']
-    time_taken = request.form.get('time_taken')
 
     # if user does not select file, browser also
     # submit an empty part without filename
@@ -316,7 +300,8 @@ def add_food_photo():
         food_photo.file_name = ""
         food_photo.user_id = current_user.get_id()
         food_photo.upload_time = datetime.datetime.utcnow()
-        food_photo.time_taken = time_taken
+        food_photo.date = request.form.get('date')
+        food_photo.time = request.form.get('time')
         database.db_session.add(food_photo)
         database.db_session.flush()
         database.db_session.commit()
@@ -358,12 +343,11 @@ def add_food_photo():
 @login_required
 def get_food_photo_by_user(user_id):
     if user_id == current_user.get_id():
-        photo_ids = database.FoodPhoto.query \
-                .with_entities(database.FoodPhoto.id)\
+        photos = database.FoodPhoto.query \
                 .filter_by(user_id=user_id) \
                 .all()
-        photo_ids = [p[0] for p in photo_ids]
-        return json.dumps(photo_ids), 200
+        data = [p.to_dict() for p in photos]
+        return json.dumps(data), 200
     else:
         return json.dumps({
             'error': 'Permission denied'

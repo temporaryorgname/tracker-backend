@@ -18,6 +18,11 @@ db_session = scoped_session(sessionmaker(autocommit=False,
 Base = declarative_base()
 Base.query = db_session.query_property()
 
+def cast_none(val, t):
+    if val is None:
+        return None
+    return t(val)
+
 class Food(Base):
     __tablename__ = 'food'
     id = Column(Integer, primary_key=True)
@@ -30,14 +35,39 @@ class Food(Base):
     protein = Column()
     parent_id = Column()
 
+    def to_dict(self):
+        def get_photos(food_id):
+            photos = FoodPhoto.query \
+                    .filter_by(food_id = food_id) \
+                    .all()
+            return [p.id for p in photos]
+        return {
+            "id": self.id, 
+            "date": str(self.date),
+            "name": self.name, 
+            "quantity": self.quantity,
+            "calories": cast_none(self.calories, float),
+            "protein": cast_none(self.protein, float),
+            "photos": get_photos(self.id)
+        }
+
 class FoodPhoto(Base):
     __tablename__ = 'food_photos'
     id = Column(Integer, primary_key=True)
     food_id = Column()
     file_name = Column()
     user_id = Column()
-    time_taken = Column()
+    date = Column()
+    time = Column()
     upload_time = Column()
+
+    def to_dict(self):
+        return {
+            "id": self.id, 
+            "food_id": self.food_id,
+            "user_id": self.user_id,
+            "date": cast_none(self.date, str)
+        }
 
 class Tag(Base):
     __tablename__ = 'tags'
