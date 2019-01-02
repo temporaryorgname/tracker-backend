@@ -4,6 +4,7 @@ from flask_cors import CORS
 import flask_login
 from flask_login import LoginManager
 import sqlalchemy
+import json
 
 from fitnessapp.views.auth import auth_bp
 from fitnessapp.views.user import user_bp

@@ -29,18 +29,19 @@ class Food(Base):
     user_id = Column()
     date = Column()
     time = Column()
+
     name = Column()
     quantity = Column()
     calories = Column()
     protein = Column()
+
     parent_id = Column()
 
+    photo_id = Column()
+    photo_group_id = Column()
+
     def to_dict(self):
-        def get_photos(food_id):
-            photos = FoodPhoto.query \
-                    .filter_by(food_id = food_id) \
-                    .all()
-            return [p.id for p in photos]
+        # Return as dictionary
         return {
             "id": self.id, 
             "date": str(self.date),
@@ -48,25 +49,40 @@ class Food(Base):
             "quantity": self.quantity,
             "calories": cast_none(self.calories, float),
             "protein": cast_none(self.protein, float),
-            "photos": get_photos(self.id)
+            "photo_id": self.photo_id,
+            "photo_group_id": self.photo_group_id
         }
 
 class FoodPhoto(Base):
     __tablename__ = 'food_photos'
     id = Column(Integer, primary_key=True)
-    food_id = Column()
     file_name = Column()
     user_id = Column()
     date = Column()
     time = Column()
     upload_time = Column()
+    group_id = Column(Integer)
 
     def to_dict(self):
         return {
             "id": self.id, 
-            "food_id": self.food_id,
             "user_id": self.user_id,
-            "date": cast_none(self.date, str)
+            "date": cast_none(self.date, str),
+            "group_id": cast_none(self.group_id, int)
+        }
+
+class PhotoGroup(Base):
+    __tablename__ = 'photo_group'
+    id = Column(Integer, primary_key=True)
+    parent_id = Column(Integer)
+    user_id = Column(Integer)
+    date = Column()
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "parent_id": self.parent_id,
+            "date": str(self.date)
         }
 
 class Tag(Base):

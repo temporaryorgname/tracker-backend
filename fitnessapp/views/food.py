@@ -32,7 +32,6 @@ def get_food():
     date = request.args.get('date')
     date = datetime.datetime.strptime(date, '%Y-%m-%d')
     if date is None:
-        #foods = database.Food.query.filter_by(user_id=current_user.get_id()).all()
         foods = database.Food.query \
                 .filter_by(user_id=current_user.get_id()) \
                 .order_by(database.Food.date).all()
@@ -41,11 +40,6 @@ def get_food():
                 .order_by(database.Food.date.desc()) \
                 .filter_by(date=date, user_id=current_user.get_id()) \
                 .all()
-    def get_photos(food_id):
-        photos = database.FoodPhoto.query \
-                .filter_by(food_id = food_id) \
-                .all()
-        return [p.id for p in photos]
     data = [f.to_dict() for f in foods]
     return json.dumps(data), 200
 
@@ -78,22 +72,20 @@ def new_food():
             f.protein = float(data['protein'])
         except Exception:
             pass
+    if 'photo_id' in data:
+        f.photo_id = data['photo_id']
+    if 'photo_group_id' in data:
+        f.photo_group_id = data['photo_group_id']
+
     f.user_id = current_user.get_id()
 
     database.db_session.add(f)
     database.db_session.flush()
     database.db_session.commit()
 
-    if 'photos' in data:
-        for photo_id in data['photos']:
-            food_photo = database.FoodPhoto.query \
-                .filter_by(id=photo_id) \
-                .first()
-            food_photo.food_id = f.id
-            database.db_session.flush()
-            database.db_session.commit()
-
-    return str(f.id),200
+    return json.dumps({
+        'id': str(f.id)
+    }),200
 
 @food_bp.route('/food/<food_id>', methods=['PUT','POST'])
 @login_required
@@ -151,6 +143,12 @@ def delete_many_foods():
     print("Requesting to delete entry %s." % data['id'])
 
     for food_id in data['id']:
+        photos = database.FoodPhoto.query \
+                .filter_by(food_id=food_id) \
+                .all()
+        for p in photos:
+            p.food_id = None
+            database.db_session.add(p)
         f = database.Food.query \
                 .filter_by(id=food_id) \
                 .filter_by(user_id=current_user.get_id()) \
@@ -357,6 +355,45 @@ def get_food_photo_by_user(user_id):
 @login_required
 def predict_class(photo_id):
     return json.dumps([]), 200
+
+@food_bp.route('/food/photo/groups', methods=['GET'])
+@login_required
+def get_food_photo_groups():
+    if 'uid' not in request.args:
+        user_id = current_user.get_id()
+    else:
+        user_id = request.args['uid']
+    if user_id == current_user.get_id():
+        groups = database.PhotoGroup.query \
+                .filter_by(user_id=user_id) \
+                .all()
+        data = [g.to_dict() for g in groups]
+        return json.dumps(data), 200
+    else:
+        return json.dumps({
+            'error': 'Permission denied'
+        }), 403
+
+@food_bp.route('/food/photo/groups', methods=['PUT','POST'])
+@login_required
+def add_food_photo_group():
+    data = request.get_json()
+
+    group = database.PhotoGroup()
+    if 'date' in data:
+        group.date = data['date']
+    else:
+        group.date = datetime.datetime.now()
+
+    group.user_id = current_user.get_id()
+
+    database.db_session.add(group)
+    database.db_session.flush()
+    database.db_session.commit()
+
+    return json.dumps({
+        'id': str(group.id)
+    }),200
 
 def tag_to_json(tag):
     return {
