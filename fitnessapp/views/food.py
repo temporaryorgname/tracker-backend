@@ -29,6 +29,43 @@ food_bp = Blueprint('food', __name__)
 @food_bp.route('/foods', methods=['GET'])
 @login_required
 def get_food():
+    """ Return all food entries matching the given criteria.
+    ---
+    parameters:
+      - name: date
+        in: query
+        type: string
+        required: true
+        format: date
+        description: Date
+    definitions:
+      Food:
+        type: object
+        properties:
+          id:
+            type: integer
+          date:
+            type: string
+          name:
+            type: string
+          quantity:
+            type: string
+          calories:
+            type: number
+          protein:
+            type: number
+          photo_id:
+            type: integer
+          photo_group_id:
+            type: integer
+    responses:
+      200:
+        description: A list of food entries.
+        schema:
+          type: array
+          items:
+            $ref: '#/definitions/Food'
+    """
     date = request.args.get('date')
     date = datetime.datetime.strptime(date, '%Y-%m-%d')
     if date is None:

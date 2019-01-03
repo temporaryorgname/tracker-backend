@@ -3,6 +3,7 @@ from flask import Flask, jsonify
 from flask_cors import CORS
 import flask_login
 from flask_login import LoginManager
+from flasgger import Swagger
 import sqlalchemy
 import json
 
@@ -17,6 +18,7 @@ app = Flask(__name__,
         instance_relative_config=True,
         static_url_path='',
         static_folder='./static')
+swagger = Swagger(app)
 app.secret_key = 'super secret key'
 CORS(app, supports_credentials=True)
 app.config.from_object('config')
