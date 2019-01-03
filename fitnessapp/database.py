@@ -53,8 +53,38 @@ class Food(Base):
             "photo_group_id": self.photo_group_id
         }
 
-class FoodPhoto(Base):
-    __tablename__ = 'food_photos'
+    @classmethod
+    def from_dict(cls, data):
+        f = cls()
+        f.update_from_dict(data)
+        return f
+
+    def update_from_dict(self, data):
+        if 'name' in data:
+            self.name = data['name']
+        if 'date' in data:
+            self.date = data['date']
+        else:
+            self.date = datetime.datetime.now()
+        if 'quantity' in data:
+            self.quantity = data['quantity']
+        if 'calories' in data:
+            self.calories = cast_none(data['calories'], float)
+        if 'protein' in data:
+            self.protein = cast_none(data['protein'], float)
+        if 'photo_id' in data:
+            self.photo_id = data['photo_id']
+        if 'photo_group_id' in data:
+            self.photo_group_id = data['photo_group_id']
+
+    def validate(self):
+        if self.name is None:
+            raise ValueError("No item name provided.")
+        if len(self.name) == 0:
+            raise ValueError("Invalid food name.")
+
+class Photo(Base):
+    __tablename__ = 'photo'
     id = Column(Integer, primary_key=True)
     file_name = Column()
     user_id = Column()
@@ -85,22 +115,99 @@ class PhotoGroup(Base):
             "date": str(self.date)
         }
 
+    @classmethod
+    def from_dict(cls, data):
+        f = cls()
+        f.update_from_dict(data)
+        return f
+
+    def update_from_dict(self, data):
+        if 'date' in data:
+            self.date = data['date']
+        if 'parent_id' in data:
+            self.parent_id = data['parent_id']
+        if 'user_id' in data:
+            self.user_id = data['user_id']
+
 class Tag(Base):
-    __tablename__ = 'tags'
+    __tablename__ = 'tag'
     id = Column(Integer, primary_key=True)
     user_id = Column()
     parent_id = Column()
     tag = Column()
     description = Column()
 
-class FoodPhotoLabel(Base):
-    __tablename__ = 'food_photo_labels'
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'user_id': self.user_id,
+            'parent_id': self.parent_id,
+            'tag': self.tag,
+            'description': self.description
+        }
+
+    @classmethod
+    def from_dict(cls, data):
+        f = cls()
+        f.update_from_dict(data)
+        return f
+
+    def update_from_dict(self, data):
+        if 'parent_id' in data:
+            self.parent_id = data['parent_id']
+        if 'user_id' in data:
+            self.user_id = data['user_id']
+        if 'tag' in data:
+            self.tag = data['tag']
+        if 'description' in data:
+            self.description = data['description']
+
+    def validate(self):
+        if self.tag is None:
+            raise ValueError("No tag name provided.")
+        if len(self.tag) == 0:
+            raise ValueError("Invalid tag name.")
+
+class PhotoLabel(Base):
+    __tablename__ = 'photo_label'
     id = Column(Integer, primary_key=True)
     user_id = Column()
     photo_id = Column()
     tag_id = Column()
     bounding_box = Column()
     bounding_polygon = Column()
+
+    def to_dict(self):
+        return {
+            'id': l.id,
+            'tag_id': l.tag_id,
+            'bounding_box': l.bounding_box,
+            'bounding_polygon': l.bounding_polygon
+        }
+
+    @classmethod
+    def from_dict(cls, data):
+        f = cls()
+        f.update_from_dict(data)
+        return f
+
+    def update_from_dict(self, data):
+        if 'user_id' in data:
+            self.user_id = data['user_id']
+        if 'photo_id' in data:
+            self.photo_id = data['photo_id']
+        if 'tag_id' in data:
+            self.tag_id = data['tag_id']
+        if 'bounding_box' in data:
+            label.bounding_box = data['bounding_box']
+        if 'bounding_polygon' in data:
+            label.bounding_polygon = data['bounding_polygon']
+
+    def validate(self):
+        if self.tag_id is None:
+            raise ValueError("No tag ID provided.")
+        if self.photo_id is None:
+            raise ValueError("No photo ID provided.")
 
 class User(Base):
     __tablename__ = 'users'
