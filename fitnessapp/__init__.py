@@ -9,8 +9,10 @@ import json
 
 from fitnessapp.views.auth import auth_bp
 from fitnessapp.views.user import user_bp
-from fitnessapp.views.food import food_bp
+#from fitnessapp.views.food import food_bp
 from fitnessapp.views.body import body_bp
+
+from fitnessapp.resources.food import blueprint as food_bp
 
 from fitnessapp import database
 
