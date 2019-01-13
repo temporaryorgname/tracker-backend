@@ -8,11 +8,17 @@ import sqlalchemy
 import json
 
 from fitnessapp.views.auth import auth_bp
-from fitnessapp.views.user import user_bp
+#from fitnessapp.views.user import user_bp
 #from fitnessapp.views.food import food_bp
-from fitnessapp.views.body import body_bp
+#from fitnessapp.views.body import body_bp
 
 from fitnessapp.resources.food import blueprint as food_bp
+from fitnessapp.resources.photos import blueprint as photos_bp
+from fitnessapp.resources.photo_groups import blueprint as photo_groups_bp
+from fitnessapp.resources.tags import blueprint as tags_bp
+from fitnessapp.resources.labels import blueprint as labels_bp
+from fitnessapp.resources.body import blueprint as body_bp
+from fitnessapp.resources.users import blueprint as user_bp
 
 from fitnessapp import database
 
@@ -29,6 +35,10 @@ app.config.from_pyfile('config.py')
 app.register_blueprint(auth_bp, url_prefix='/api/auth')
 app.register_blueprint(user_bp, url_prefix='/api/data')
 app.register_blueprint(food_bp, url_prefix='/api/data')
+app.register_blueprint(photos_bp, url_prefix='/api/data')
+app.register_blueprint(photo_groups_bp, url_prefix='/api/data')
+app.register_blueprint(tags_bp, url_prefix='/api/data')
+app.register_blueprint(labels_bp, url_prefix='/api/data')
 app.register_blueprint(body_bp, url_prefix='/api/data')
 
 login_manager = LoginManager()

@@ -98,6 +98,7 @@ class Photo(Base):
             "id": self.id, 
             "user_id": self.user_id,
             "date": cast_none(self.date, str),
+            "time": cast_none(self.time, str),
             "group_id": cast_none(self.group_id, int)
         }
 
@@ -111,6 +112,7 @@ class PhotoGroup(Base):
     def to_dict(self):
         return {
             "id": self.id,
+            "user_id": self.user_id,
             "parent_id": self.parent_id,
             "date": str(self.date)
         }

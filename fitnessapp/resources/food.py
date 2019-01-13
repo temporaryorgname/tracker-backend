@@ -27,6 +27,8 @@ class Food(Resource):
     def get(self, food_id):
         """ Return food entry with the given ID.
         ---
+        tags:
+          - food
         parameters:
           - name: id
             in: path
@@ -68,6 +70,8 @@ class Food(Resource):
     def put(self, food_id):
         """ Update a food entry with a new entry.
         ---
+        tags:
+          - food
         parameters:
           - name: id
             in: path
@@ -125,6 +129,8 @@ class Food(Resource):
     def delete(self, food_id):
         """ Delete an entry with the given ID.
         ---
+        tags:
+          - food
         parameters:
           - name: id
             in: path
@@ -160,11 +166,13 @@ class Food(Resource):
         database.db_session.commit()
         return {"message": "Deleted successfully"}, 200
 
-class FoodList(SwaggerView):
+class FoodList(Resource):
     @login_required
     def get(self):
         """ Return all food entries matching the given criteria.
         ---
+        tags:
+          - food
         parameters:
           - name: date
             in: query
@@ -198,6 +206,8 @@ class FoodList(SwaggerView):
     def post(self):
         """ Create a new food entry
         ---
+        tags:
+          - food
         parameters:
           - in: body
             description: Entry to create.
@@ -251,6 +261,8 @@ class FoodList(SwaggerView):
     def delete(self):
         """ Delete all food entries matching the given criteria.
         ---
+        tags:
+          - food
         parameters:
           - name: date
             in: query
@@ -290,5 +302,73 @@ class FoodList(SwaggerView):
         database.db_session.commit()
         return {"message": "Deleted successfully"}, 200
 
-api.add_resource(Food, '/foods/<int:id>')
+class FoodSearch(Resource):
+    @login_required
+    def get(self):
+        """ Search food entries for names matching the query string.
+        The search is case-insensitive.
+        ---
+        tags:
+          - food
+        parameters:
+          - name: q
+            in: query
+            type: string
+            required: true
+        responses:
+          200:
+            description: Food entries
+            schema:
+              properties:
+                name:
+                  type: string
+                quantity:
+                  type: string
+                calories:
+                  type: number
+                protein:
+                  type: number
+                count:
+                  type: number
+                  description: The number of times this same entry appears.
+        """
+        if 'q' not in request.args:
+            return 'Invalid request. A query is required.', 400
+        query = request.args['q']
+        foods = database.Food.query \
+                .with_entities(
+                        func.mode().within_group(database.Food.name),
+                        database.Food.quantity,
+                        database.Food.calories,
+                        database.Food.protein,
+                        func.count('*')
+                ) \
+                .filter_by(user_id=current_user.get_id()) \
+                .filter(database.Food.name.ilike('%{0}%'.format(query))) \
+                .group_by(
+                        func.lower(database.Food.name),
+                        database.Food.quantity,
+                        database.Food.calories,
+                        database.Food.protein,
+                ) \
+                .order_by(func.count('*').desc()) \
+                .limit(5) \
+                .all()
+        def cast_decimal(dec):
+            if dec is None:
+                return None
+            return float(dec)
+        def to_dict(f):
+            return {
+                'name': f[0],
+                'quantity': f[1],
+                'calories': cast_decimal(f[2]),
+                'protein': cast_decimal(f[3]),
+                'count': f[4]
+            }
+        data = [to_dict(f) for f in foods]
+        return data, 200
+
 api.add_resource(FoodList, '/foods')
+api.add_resource(Food, '/foods/<int:id>')
+api.add_resource(FoodSearch, '/foods/search')
