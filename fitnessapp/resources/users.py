@@ -1,6 +1,7 @@
 from flask import Blueprint
 from flask import request
 from flask_restful import Api, Resource
+import flask_login
 from flask_login import login_required, current_user
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.sql import func
@@ -8,11 +9,11 @@ from werkzeug.utils import secure_filename
 from flasgger import SwaggerView
 
 import datetime
-import json
 import os
 from PIL import Image
 import base64
 from io import BytesIO
+import bcrypt
 
 from fitnessapp import database
 
@@ -115,7 +116,9 @@ class UserList(Resource):
         user.email = data['email']
         user.password = bcrypt.hashpw(data['password'].encode('utf-8'), bcrypt.gensalt(12))
 
-        existing_user = database.User.query.filter_by(email=user.email).all()
+        existing_user = database.User.query \
+                .filter_by(email=user.email) \
+                .all()
         if len(existing_user) == 0:
             database.db_session.add(user)
             database.db_session.flush()

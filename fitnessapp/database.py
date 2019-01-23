@@ -21,7 +21,11 @@ Base.query = db_session.query_property()
 def cast_none(val, t):
     if val is None:
         return None
-    return t(val)
+    try:
+        return t(val)
+    except:
+        print('Could not convert "%s" of type %s to %s' % (val, type(val), t))
+        return None
 
 class Food(Base):
     __tablename__ = 'food'

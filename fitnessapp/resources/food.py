@@ -63,7 +63,7 @@ class Food(Resource):
         food = database.Food.query \
                 .filter_by(user_id=current_user.get_id()) \
                 .filter_by(id=food_id) \
-                .order_by(database.Food.date).all()
+                .one()
         return food.to_dict(), 200
 
     @login_required
@@ -109,9 +109,7 @@ class Food(Resource):
             }), 404
 
         # Create new Food object
-        f = database.Food.from_dict(data)
-        f.id = food_id
-        f.user_id = current_user.get_id()
+        f.update_from_dict(data)
         try:
             f.validate()
         except Exception as e:
@@ -119,8 +117,6 @@ class Food(Resource):
                 'error': str(e)
             }), 400
 
-        database.db_session.add(f)
-        database.db_session.flush()
         database.db_session.commit()
 
         return json.dumps({'message': 'success'}), 200
@@ -193,11 +189,13 @@ class FoodList(Resource):
         if date is None:
             foods = database.Food.query \
                     .filter_by(user_id=current_user.get_id()) \
-                    .order_by(database.Food.date).all()
+                    .order_by(database.Food.id) \
+                    .all()
         else:
             foods = database.Food.query \
                     .order_by(database.Food.date.desc()) \
                     .filter_by(date=date, user_id=current_user.get_id()) \
+                    .order_by(database.Food.id) \
                     .all()
         data = [f.to_dict() for f in foods]
         return data, 200
@@ -285,9 +283,12 @@ class FoodList(Resource):
                   type: string
         """
         data = request.get_json()
-        print("Requesting to delete entry %s." % data['id'])
+        print(type(data))
+        print(data)
+        for d in data:
+            print("Requesting to delete entry %s." % d['id'])
 
-        for food_id in data['id']:
+            food_id = d['id']
             f = database.Food.query \
                     .filter_by(id=food_id) \
                     .filter_by(user_id=current_user.get_id()) \
@@ -370,5 +371,5 @@ class FoodSearch(Resource):
         return data, 200
 
 api.add_resource(FoodList, '/foods')
-api.add_resource(Food, '/foods/<int:id>')
+api.add_resource(Food, '/foods/<int:food_id>')
 api.add_resource(FoodSearch, '/foods/search')

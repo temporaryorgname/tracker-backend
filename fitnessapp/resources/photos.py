@@ -317,5 +317,5 @@ class PhotoData(Resource):
         }, 200
 
 api.add_resource(PhotoList, '/photos')
-api.add_resource(Photos, '/photos/<int:id>')
+api.add_resource(Photos, '/photos/<int:photo_id>')
 api.add_resource(PhotoData, '/photos/<int:photo_id>/data')

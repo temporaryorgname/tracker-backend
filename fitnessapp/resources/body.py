@@ -57,6 +57,37 @@ class BodyweightList(Resource):
             'bodyweight': float(w.bodyweight)
         } for w in weights], 200
 
+    def delete(self):
+        # Get filters from query parameters
+        filterable_params = ['id', 'date']
+        filter_params = {}
+        for p in filterable_params:
+            val = request.args.get(p)
+            if val is not None:
+                filter_params[p] = val
+        if len(filter_params) == 0:
+            return {
+                'error': "No filters provided."
+            }, 400
+
+        weights = database.Bodyweight.query \
+                .filter_by(**filter_params) \
+                .filter_by(user_id=current_user.get_id()) \
+                .all()
+
+        if weights is None:
+            return {
+                'error': "Unable to find requested bodyweight entry."
+            }, 404
+
+        for w in weights:
+            database.db_session.delete(w)
+        database.db_session.flush()
+        database.db_session.commit()
+        return {
+            'message': "Deleted successfully"
+        }, 200
+
     @login_required
     def post(self):
         """ Create a new bodyweight entry.
@@ -116,6 +147,7 @@ class BodyweightList(Resource):
         database.db_session.commit()
 
         return {
+            'id': bw.id,
             'message': 'Body weight added successfully.'
         }, 200
 
