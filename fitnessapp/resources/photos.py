@@ -94,15 +94,38 @@ class Photos(Resource):
         ---
         tags:
           - photos
+        parameters:
+          - name: id
+            in: path
+            type: integer
+            required: true
         responses:
-          501:
+          200:
+            schema:
+              type: object
+              properties:
+                message:
+                  type: string
+          404:
             schema:
               type: object
               properties:
                 error:
                   type: string
         """
-        return {'error': 'Not implemented'}, 501
+        p = database.Photo.query \
+                .filter_by(id=photo_id) \
+                .filter_by(user_id=current_user.get_id()) \
+                .one()
+        if p is None:
+            return json.dumps({
+                "error": "Unable to find photo with ID %d." % photo_id
+            }), 404
+        database.db_session.delete(p)
+
+        database.db_session.flush()
+        database.db_session.commit()
+        return {"message": "Deleted successfully"}, 200
 
 class PhotoList(Resource):
     @login_required
@@ -229,7 +252,53 @@ class PhotoList(Resource):
 
     @login_required
     def delete(self):
-        pass
+        """ Delete all photos matching the given criteria.
+        ---
+        tags:
+          - photos
+        parameters:
+          - in: body
+            description: Object(s) to delete
+            required: true
+            schema:
+                type: object
+                properties:
+                  id:
+                    type: number
+        responses:
+          200:
+            schema:
+              type: object
+              properties:
+                message:
+                  type: string
+          404:
+            schema:
+              type: object
+              properties:
+                error:
+                  type: string
+        """
+        data = request.get_json()
+        print(type(data))
+        print(data)
+        for d in data:
+            print("Requesting to delete entry %s." % d['id'])
+
+            photo_id = d['id']
+            p = database.Photo.query \
+                    .filter_by(id=photo_id) \
+                    .filter_by(user_id=current_user.get_id()) \
+                    .one()
+            if f is None:
+                return json.dumps({
+                    "error": "Unable to find photo with ID %d." % photo_id
+                }), 404
+            database.db_session.delete(p)
+
+        database.db_session.flush()
+        database.db_session.commit()
+        return {"message": "Deleted successfully"}, 200
 
 class PhotoData(Resource):
     @login_required

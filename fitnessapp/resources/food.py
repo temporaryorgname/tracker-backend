@@ -370,6 +370,43 @@ class FoodSearch(Resource):
         data = [to_dict(f) for f in foods]
         return data, 200
 
+class FoodSummary(Resource):
+    @login_required
+    def get(self):
+        """ Give a summary of the user's food consumption
+        ---
+        tags:
+          - food
+        responses:
+          200:
+            schema:
+              properties:
+                goal_calories:
+                  type: number
+                calorie_history:
+                  type: array
+                  description: A list of total calories consumed in the last week. The number at index 0 is today's Calorie consumption, 1 is yesterday, etc.
+        """
+        start_date = str(datetime.date.today()-datetime.timedelta(days=7))
+        foods = database.engine.execute("""
+            SELECT date, SUM(calories)
+            FROM public.food
+            WHERE date > '%s'
+            GROUP BY date
+            ORDER BY date DESC
+        """ % start_date)
+        def cast_decimal(dec):
+            if dec is None:
+                return None
+            return float(dec)
+        def to_dict(f):
+            return {
+                'date': str(f[0]),
+                'calories': cast_decimal(f[1]),
+            }
+        return [to_dict(f) for f in foods], 200
+
 api.add_resource(FoodList, '/foods')
 api.add_resource(Food, '/foods/<int:food_id>')
 api.add_resource(FoodSearch, '/foods/search')
+api.add_resource(FoodSummary, '/foods/summary')

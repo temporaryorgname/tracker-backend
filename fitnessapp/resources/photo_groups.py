@@ -19,13 +19,18 @@ from fitnessapp import database
 blueprint = Blueprint('photo_groups', __name__)
 api = Api(blueprint)
 
-class PhotoGroupList(Resource):
+class PhotoGroups(Resource):
     @login_required
-    def get(self):
-        """ Return all photo entries matching the given criteria.
+    def get(self, group_id):
+        """ Return photo group with the given ID.
         ---
         tags:
           - photo groups
+        parameters:
+          - name: id
+            in: path
+            type: integer
+            required: true
         definitions:
           PhotoGroup:
             type: object
@@ -41,6 +46,84 @@ class PhotoGroupList(Resource):
               date:
                 type: string
                 description: Date on which the photos contained in this group were taken.
+        responses:
+          200:
+            description: Photo group entry
+            schema:
+              $ref: '#/definitions/PhotoGroup'
+        """
+        group = database.PhotoGroup.query \
+                .filter_by(user_id=current_user.get_id()) \
+                .filter_by(id=group_id) \
+                .one()
+        if group is None:
+            return json.dumps({
+                'error': 'Photo ID not found'
+            }), 404
+        return json.dumps(group.to_dict()), 200
+
+    @login_required
+    def put(self, group_id):
+        """ Update a photo group with a new entry.
+        ---
+        tags:
+          - photo groups
+        responses:
+          501:
+            schema:
+              type: object
+              properties:
+                error:
+                  type: string
+        """
+        return {'error': 'Not implemented'}, 501
+
+    @login_required
+    def delete(self, group_id):
+        """ Delete an entry with the given ID.
+        ---
+        tags:
+          - photo groups
+        parameters:
+          - name: id
+            in: path
+            type: integer
+            required: true
+        responses:
+          200:
+            schema:
+              type: object
+              properties:
+                message:
+                  type: string
+          404:
+            schema:
+              type: object
+              properties:
+                error:
+                  type: string
+        """
+        group = database.PhotoGroup.query \
+                .filter_by(id=group_id) \
+                .filter_by(user_id=current_user.get_id()) \
+                .one()
+        if group is None:
+            return json.dumps({
+                "error": "Unable to find photo group with ID %d." % group_id
+            }), 404
+        database.db_session.delete(group)
+
+        database.db_session.flush()
+        database.db_session.commit()
+        return {"message": "Deleted successfully"}, 200
+
+class PhotoGroupList(Resource):
+    @login_required
+    def get(self):
+        """ Return all photo entries matching the given criteria.
+        ---
+        tags:
+          - photo groups
         parameters:
           - name: id 
             in: query
@@ -120,5 +203,55 @@ class PhotoGroupList(Resource):
             'id': group.id
         },200
 
-api.add_resource(PhotoGroupList, '/photo_groups')
+    @login_required
+    def delete(self):
+        """ Delete all photo groups matching the given criteria.
+        ---
+        tags:
+          - photo groups
+        parameters:
+          - in: body
+            description: Filter parameters for the object(s) to delete.
+            required: true
+            schema:
+                type: object
+                properties:
+                  id:
+                    type: number
+        responses:
+          200:
+            schema:
+              type: object
+              properties:
+                message:
+                  type: string
+          404:
+            schema:
+              type: object
+              properties:
+                error:
+                  type: string
+        """
+        data = request.get_json()
+        print(type(data))
+        print(data)
+        for d in data:
+            print("Requesting to delete entry %s." % d['id'])
 
+            group_id = d['id']
+            g = database.Food.query \
+                    .filter_by(id=group_id) \
+                    .filter_by(user_id=current_user.get_id()) \
+                    .one()
+            if f is None:
+                return json.dumps({
+                    "error": "Unable to find photo group with ID %d." % group_id
+                }), 404
+            database.db_session.delete(g)
+
+        database.db_session.flush()
+        database.db_session.commit()
+        return {"message": "Deleted successfully"}, 200
+
+api.add_resource(PhotoGroups, '/photo_groups/<int:group_id>')
+api.add_resource(PhotoGroupList, '/photo_groups')
