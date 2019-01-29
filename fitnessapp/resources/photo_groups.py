@@ -8,7 +8,6 @@ from werkzeug.utils import secure_filename
 from flasgger import SwaggerView
 
 import datetime
-import json
 import os
 from PIL import Image
 import base64
@@ -57,10 +56,10 @@ class PhotoGroups(Resource):
                 .filter_by(id=group_id) \
                 .one()
         if group is None:
-            return json.dumps({
+            return {
                 'error': 'Photo ID not found'
-            }), 404
-        return json.dumps(group.to_dict()), 200
+            }, 404
+        return group.to_dict(), 200
 
     @login_required
     def put(self, group_id):
@@ -108,9 +107,9 @@ class PhotoGroups(Resource):
                 .filter_by(user_id=current_user.get_id()) \
                 .one()
         if group is None:
-            return json.dumps({
+            return {
                 "error": "Unable to find photo group with ID %d." % group_id
-            }), 404
+            }, 404
         database.db_session.delete(group)
 
         database.db_session.flush()
@@ -244,9 +243,9 @@ class PhotoGroupList(Resource):
                     .filter_by(user_id=current_user.get_id()) \
                     .one()
             if f is None:
-                return json.dumps({
+                return {
                     "error": "Unable to find photo group with ID %d." % group_id
-                }), 404
+                }, 404
             database.db_session.delete(g)
 
         database.db_session.flush()

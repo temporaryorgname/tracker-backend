@@ -8,7 +8,6 @@ from werkzeug.utils import secure_filename
 from flasgger import SwaggerView
 
 import datetime
-import json
 import os
 from PIL import Image
 import base64

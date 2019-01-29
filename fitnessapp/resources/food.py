@@ -8,7 +8,6 @@ from werkzeug.utils import secure_filename
 from flasgger import SwaggerView
 
 import datetime
-import json
 import os
 from PIL import Image
 import base64
@@ -243,17 +242,17 @@ class FoodList(Resource):
         try:
             f.validate()
         except Exception as e:
-            return json.dumps({
+            return {
                 'error': str(e)
-            }), 400
+            }, 400
 
         database.db_session.add(f)
         database.db_session.flush()
         database.db_session.commit()
 
-        return json.dumps({
+        return {
             'id': str(f.id)
-        }), 201
+        }, 201
 
     @login_required
     def delete(self):

@@ -9,7 +9,6 @@ from werkzeug.utils import secure_filename
 from flasgger import SwaggerView
 
 import datetime
-import json
 import os
 from PIL import Image
 import base64
@@ -67,10 +66,10 @@ class Photos(Resource):
                 .filter_by(id=photo_id) \
                 .one()
         if photo is None:
-            return json.dumps({
+            return {
                 'error': 'Photo ID not found'
-            }), 404
-        return json.dumps(photo.to_dict()), 200
+            }, 404
+        return photo.to_dict(), 200
 
     @login_required
     def put(self, photo_id):
@@ -118,9 +117,9 @@ class Photos(Resource):
                 .filter_by(user_id=current_user.get_id()) \
                 .one()
         if p is None:
-            return json.dumps({
+            return {
                 "error": "Unable to find photo with ID %d." % photo_id
-            }), 404
+            }, 404
         database.db_session.delete(p)
 
         database.db_session.flush()
@@ -291,9 +290,9 @@ class PhotoList(Resource):
                     .filter_by(user_id=current_user.get_id()) \
                     .one()
             if f is None:
-                return json.dumps({
+                return {
                     "error": "Unable to find photo with ID %d." % photo_id
-                }), 404
+                }, 404
             database.db_session.delete(p)
 
         database.db_session.flush()
@@ -331,7 +330,7 @@ class PhotoData(Resource):
         if size is None:
             size = 32
         if size not in [32,700]:
-            return json.dumps({'error': 'Unsupported size.'}), 400
+            return {'error': 'Unsupported size.'}, 400
 
         filename = str(photo_id)
         fp = database.Photo.query \
@@ -373,9 +372,9 @@ class PhotoData(Resource):
         if img is None:
             img = get_s3_image(size)
         if img is None:
-            return json.dumps({
+            return {
                 'error': 'Unable to retrieve file %s' % filename
-            }), 404
+            }, 404
 
         buffered = BytesIO()
         img.save(buffered, format="PNG")
