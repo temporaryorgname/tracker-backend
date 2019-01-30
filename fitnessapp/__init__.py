@@ -24,6 +24,7 @@ from fitnessapp import database
 
 app = Flask(__name__,
         instance_relative_config=True,
+        static_url_path='/thisshouldneverbeused', # static_paths with the `static/*` path doesn't work without this.
         static_folder='./static')
 swagger = Swagger(app)
 app.secret_key = 'super secret key'
@@ -62,10 +63,18 @@ def request_loader(request):
 
     return user
 
+@app.route('/favicon.ico')
+def favicon_paths():
+    return app.send_static_file("favicon.ico")
+
+@app.route('/static', defaults={'path': ''})
+@app.route('/static/<path:path>')
+def static_paths(path):
+    return app.send_static_file('static/'+path)
+
 @app.route('/', defaults={'path': ''})
-@app.route("/<string:path>")
 @app.route('/<path:path>')
-def static_file(path):
+def react_paths(path):
     return app.send_static_file("index.html")
 
 @app.errorhandler(sqlalchemy.exc.TimeoutError)
