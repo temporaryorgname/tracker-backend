@@ -269,7 +269,6 @@ class BodyweightSummary(Resource):
             while w.date > start_date+(current_bucket+1)*bucket_size:
                 current_bucket += 1
             weight_buckets[current_bucket].append(float(w.bodyweight))
-            print(w.to_dict())
         mean_weights_over_time = [np.mean(x) if len(x)>0 else None for x in weight_buckets]
 
         return {

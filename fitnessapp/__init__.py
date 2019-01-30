@@ -24,7 +24,6 @@ from fitnessapp import database
 
 app = Flask(__name__,
         instance_relative_config=True,
-        static_url_path='',
         static_folder='./static')
 swagger = Swagger(app)
 app.secret_key = 'super secret key'
