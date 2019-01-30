@@ -12,6 +12,7 @@ import os
 from PIL import Image
 import base64
 from io import BytesIO
+import numpy as np
 
 from fitnessapp import database
 
@@ -37,6 +38,20 @@ class BodyweightList(Resource):
                 type: string
               bodyweight:
                 type: number
+        parameters:
+          - name: id
+            in: query
+            type: number
+          - name: date
+            in: query
+            type: string
+          - name: user_id
+            in: query
+            type: number
+          - name: page
+            in: query
+            type: number
+            description: Page number. If not provided, will return the 10 most recent entries.
         responses:
           200:
             schema:
@@ -44,10 +59,22 @@ class BodyweightList(Resource):
               items:
                 $ref: '#/definitions/Bodyweight'
         """
+        # Get filters from query parameters
+        filterable_params = ['id', 'date', 'user_id'];
+        filter_params = {}
+        for p in filterable_params:
+            val = request.args.get(p)
+            if val is not None:
+                filter_params[p] = val
+        page = request.args.get('page')
+        if page is None:
+            page = 0
         weights = database.Bodyweight.query \
                 .filter_by(user_id=current_user.get_id()) \
                 .order_by(database.Bodyweight.date.desc()) \
                 .order_by(database.Bodyweight.time.desc()) \
+                .limit(10) \
+                .offset(page*10) \
                 .all()
         return [{
             'id': w.id,
@@ -193,7 +220,69 @@ class Bodyweights(Resource):
             'message': "Deleted successfully"
         }, 200
 
+class BodyweightSummary(Resource):
+    @login_required
+    def get(self):
+        """ Give a summary of the user's bodyweight history
+        ---
+        tags:
+          - body
+        responses:
+          200:
+            schema:
+              properties:
+                by_time:
+                  type: array
+                  description: An array containing the mean bodyweight as a function of time of day.
+                history:
+                  type: object
+                  properties:
+                    start_date:
+                      type: string
+                    end_date:
+                      type: string
+                    data:
+                      type: array
+                      items: number
+                      description: Evenly-spaced bodyweight where the first data point is on `start_date` and the last is on `end_date`.
+        """
+        weights = database.Bodyweight.query \
+                .filter_by(user_id=current_user.get_id()) \
+                .filter(database.Bodyweight.time.isnot(None)) \
+                .filter(database.Bodyweight.bodyweight.isnot(None)) \
+                .all()
+
+        # Compute mean weight by time of day
+        weight_by_hour = [[] for _ in range(24)]
+        for w in weights:
+            weight_by_hour[w.time.hour].append(float(w.bodyweight))
+        mean_by_hour = [np.mean(x) if len(x) > 0 else None for x in weight_by_hour]
+
+        # Compute history
+        num_buckets = 20
+        start_date = weights[0].date
+        end_date = weights[-1].date
+        bucket_size = (end_date-start_date)/num_buckets
+        weight_buckets = [[] for _ in range(num_buckets)]
+        current_bucket = 0
+        for w in weights:
+            while w.date > start_date+(current_bucket+1)*bucket_size:
+                current_bucket += 1
+            weight_buckets[current_bucket].append(float(w.bodyweight))
+            print(w.to_dict())
+        mean_weights_over_time = [np.mean(x) if len(x)>0 else None for x in weight_buckets]
+
+        return {
+            'by_time': mean_by_hour,
+            'history': {
+                'start_date': str(start_date),
+                'end_date': str(end_date),
+                'data': mean_weights_over_time
+            }
+        }, 200
+
 api.add_resource(BodyweightList, '/body/weights')
 api.add_resource(Bodyweights, '/body/weights/<int:entry_id>')
+api.add_resource(BodyweightSummary, '/body/weights/summary')
 
 

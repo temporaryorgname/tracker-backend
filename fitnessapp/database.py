@@ -245,3 +245,12 @@ class Bodyweight(Base):
     date = Column()
     time = Column()
     bodyweight = Column()
+
+    def to_dict(self):
+        return {
+            "id": self.id, 
+            "user_id": self.user_id,
+            "date": cast_none(self.date, str),
+            "time": cast_none(self.time, str),
+            "bodyweight": cast_none(self.bodyweight, float)
+        }
