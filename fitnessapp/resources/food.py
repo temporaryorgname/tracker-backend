@@ -103,22 +103,22 @@ class Food(Resource):
                 .filter_by(user_id=current_user.get_id()) \
                 .first()
         if f is None:
-            return json.dumps({
+            return {
                 'error': "ID not found"
-            }), 404
+            }, 404
 
         # Create new Food object
         f.update_from_dict(data)
         try:
             f.validate()
         except Exception as e:
-            return json.dumps({
+            return {
                 'error': str(e)
-            }), 400
+            }, 400
 
         database.db_session.commit()
 
-        return json.dumps({'message': 'success'}), 200
+        return {'message': 'success'}, 200
 
     @login_required
     def delete(self, food_id):
@@ -152,9 +152,9 @@ class Food(Resource):
                 .first()
 
         if f is None:
-            return json.dumps({
+            return {
                 "error": "Unable to find food entry with ID %d." % food_id
-            }), 404
+            }, 404
 
         database.db_session.delete(f)
         database.db_session.flush()
@@ -293,9 +293,9 @@ class FoodList(Resource):
                     .filter_by(user_id=current_user.get_id()) \
                     .one()
             if f is None:
-                return json.dumps({
+                return {
                     "error": "Unable to find food entry with ID %d." % food_id
-                }), 404
+                }, 404
             database.db_session.delete(f)
 
         database.db_session.flush()
