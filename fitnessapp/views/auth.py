@@ -13,24 +13,6 @@ from fitnessapp import database
 
 auth_bp = Blueprint('auth', __name__)
 
-@auth_bp.route('/signup', methods=['POST'])
-def signup():
-    data = request.get_json()
-    user = database.User()
-    user.name = data['name']
-    user.email = data['email']
-    user.password = bcrypt.hashpw(data['password'].encode('utf-8'), bcrypt.gensalt(12))
-
-    existing_user = database.User.query.filter_by(email=user.email).all()
-    if len(existing_user) == 0:
-        database.db_session.add(user)
-        database.db_session.flush()
-        database.db_session.commit()
-        flask_login.login_user(user)
-        return "User created", 200
-    else:
-        return "User already exists", 400
-
 @auth_bp.route('/login', methods=['POST'])
 def login():
     data = request.get_json()

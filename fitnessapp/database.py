@@ -2,7 +2,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import scoped_session, sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 
-from sqlalchemy import Column, Integer, String
+from sqlalchemy import Column, Integer, String, Float
 
 import os
 
@@ -223,6 +223,17 @@ class User(Base):
     password = Column()
     last_activity = Column()
     verified_email = Column()
+
+    prefered_units = Column()
+
+    target_weight = Column(Float)
+    target_calories = Column(Float)
+    weight_goal = Column()
+
+    country = Column()
+    state = Column()
+    city = Column()
+
     active = False
     authenticated = False
 
@@ -237,6 +248,36 @@ class User(Base):
 
     def get_id(self):
         return self.id
+
+    @classmethod
+    def from_dict(cls, data):
+        f = cls()
+        f.update_from_dict(data)
+        return f
+
+    def update_from_dict(self, data):
+        if 'name' in data:
+            self.name = data['name']
+        if 'prefered_units' in data:
+            self.prefered_units = data['prefered_units']
+        if 'target_weight' in data:
+            self.target_weight = cast_none(data['target_weight'], float)
+        if 'target_calories' in data:
+            self.target_calories = cast_none(data['target_calories'], float)
+        if 'weight_goal' in data:
+            self.weight_goal = data['weight_goal']
+        if 'country' in data:
+            self.country = data['country']
+        if 'state' in data:
+            self.state = data['state']
+        if 'city' in data:
+            self.city = data['city']
+
+    def validate(self):
+        if self.name is None:
+            raise ValueError("No tag ID provided.")
+        if len(self.name) is None:
+            raise ValueError("Invalid name.")
 
 class Bodyweight(Base):
     __tablename__ = 'body'
