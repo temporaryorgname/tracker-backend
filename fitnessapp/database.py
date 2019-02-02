@@ -218,21 +218,9 @@ class PhotoLabel(Base):
 class User(Base):
     __tablename__ = 'users'
     id = Column(Integer, primary_key=True)
-    name = Column()
     email = Column()
     password = Column()
-    last_activity = Column()
     verified_email = Column()
-
-    prefered_units = Column()
-
-    target_weight = Column(Float)
-    target_calories = Column(Float)
-    weight_goal = Column()
-
-    country = Column()
-    state = Column()
-    city = Column()
 
     active = False
     authenticated = False
@@ -249,6 +237,26 @@ class User(Base):
     def get_id(self):
         return self.id
 
+class UserProfile(Base):
+    __tablename__ = 'user_profile'
+    id = Column(Integer, primary_key=True)
+    display_name = Column()
+    last_activity = Column()
+    gender = Column()
+
+    prefered_units = Column()
+
+    target_weight = Column(Float)
+    target_calories = Column(Float)
+    weight_goal = Column()
+
+    country = Column()
+    state = Column()
+    city = Column()
+
+    active = False
+    authenticated = False
+
     @classmethod
     def from_dict(cls, data):
         f = cls()
@@ -256,8 +264,8 @@ class User(Base):
         return f
 
     def update_from_dict(self, data):
-        if 'name' in data:
-            self.name = data['name']
+        if 'display_name' in data:
+            self.display_name = data['display_name']
         if 'prefered_units' in data:
             self.prefered_units = data['prefered_units']
         if 'target_weight' in data:
@@ -274,9 +282,9 @@ class User(Base):
             self.city = data['city']
 
     def validate(self):
-        if self.name is None:
-            raise ValueError("No tag ID provided.")
-        if len(self.name) is None:
+        if self.display_name is None:
+            raise ValueError("No name provided.")
+        if len(self.display_name) is None:
             raise ValueError("Invalid name.")
 
 class Bodyweight(Base):
