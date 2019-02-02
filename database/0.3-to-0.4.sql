@@ -1,5 +1,12 @@
 BEGIN;
 
+DO $$ BEGIN
+IF EXISTS (select * from meta where key='SCHEMA_VERSION' AND value='0.3') THEN
+
+----------------------------------------------------------------------------------------------------
+--- Update script starts here
+----------------------------------------------------------------------------------------------------
+
 UPDATE public.meta SET value='0.4' WHERE key='SCHEMA_VERSION';
 
 CREATE TABLE public.user_profile (
@@ -25,3 +32,17 @@ CREATE TABLE public.tag_relation (
 	child_id integer REFERENCES public.tag(id)
 );
 ALTER TABLE public.tag DROP COLUMN parent_id;
+
+--- All bodyweight entries were saved in lbs until now
+--- Convert everything to SI units
+UPDATE public.body SET bodyweight=bodyweight*0.45359237;
+
+ALTER TABLE public.food ALTER COLUMN name VARCHAR(255);
+
+----------------------------------------------------------------------------------------------------
+--- Update script ends here
+----------------------------------------------------------------------------------------------------
+
+END IF;
+END $$;
+

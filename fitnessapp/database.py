@@ -82,10 +82,7 @@ class Food(Base):
             self.photo_group_id = data['photo_group_id']
 
     def validate(self):
-        if self.name is None:
-            raise ValueError("No item name provided.")
-        if len(self.name) == 0:
-            raise ValueError("Invalid food name.")
+        return True
 
 class Photo(Base):
     __tablename__ = 'photo'

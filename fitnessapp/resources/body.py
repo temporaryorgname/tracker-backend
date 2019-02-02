@@ -76,13 +76,23 @@ class BodyweightList(Resource):
                 .limit(10) \
                 .offset(page*10) \
                 .all()
+        units = database.UserProfile.query \
+                .with_entities(
+                        database.UserProfile.prefered_units
+                )\
+                .filter_by(id=current_user.get_id()) \
+                .one()[0]
+        multiplier = 1
+        if units == 'lbs':
+            multiplier = 1/0.45359237
         return [{
             'id': w.id,
             'date': str(w.date),
             'time': str(w.time) if w.time is not None else '',
-            'bodyweight': float(w.bodyweight)
+            'bodyweight': float(w.bodyweight)*multiplier
         } for w in weights], 200
 
+    @login_required
     def delete(self):
         # Get filters from query parameters
         filterable_params = ['id', 'date']
@@ -150,6 +160,12 @@ class BodyweightList(Resource):
         """
         data = request.get_json()
         bw = database.Bodyweight()
+        units = database.UserProfile.query \
+                .with_entities(
+                        database.UserProfile.prefered_units
+                )\
+                .filter_by(id=current_user.get_id()) \
+                .one()[0]
 
         try:
             bw.bodyweight = float(data['bodyweight'])
@@ -165,6 +181,9 @@ class BodyweightList(Resource):
             }, 400
         if 'time' in data:
             bw.time= data['time']
+
+        if units == 'lbs':
+            bw.bodyweight *= 0.45359237
 
         bw.user_id = current_user.get_id()
 
