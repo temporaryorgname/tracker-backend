@@ -6,6 +6,7 @@ from flask_login import LoginManager
 from flasgger import Swagger
 import sqlalchemy
 import json
+import traceback
 
 from fitnessapp.views.auth import auth_bp
 #from fitnessapp.views.user import user_bp
@@ -85,7 +86,7 @@ def timeouterror_handler(error):
 
 @app.errorhandler(Exception)
 def exception_handler(error):
-    print(error)
+    print(traceback.format_exc())
     return json.dumps({
-        'error': 'Unhandled error encountered'
+        'error': 'Server error encountered'
     }), 500

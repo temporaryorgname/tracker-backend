@@ -266,9 +266,9 @@ class UserProfile(Base):
         if 'prefered_units' in data:
             self.prefered_units = data['prefered_units']
         if 'target_weight' in data:
-            self.target_weight = cast_none(data['target_weight'], float)
+            self.target_weight = data['target_weight']
         if 'target_calories' in data:
-            self.target_calories = cast_none(data['target_calories'], float)
+            self.target_calories = data['target_calories']
         if 'weight_goal' in data:
             self.weight_goal = data['weight_goal']
         if 'country' in data:
@@ -283,6 +283,16 @@ class UserProfile(Base):
             raise ValueError("No name provided.")
         if len(self.display_name) is None:
             raise ValueError("Invalid name.")
+        if self.target_weight is not None:
+            try:
+                float(self.target_weight)
+            except:
+                raise ValueError("Invalid target weight")
+        if self.target_calories is not None:
+            try:
+                float(self.target_calories)
+            except:
+                raise ValueError("Invalid target Calories")
 
 class Bodyweight(Base):
     __tablename__ = 'body'
