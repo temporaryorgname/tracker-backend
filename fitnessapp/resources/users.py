@@ -249,8 +249,8 @@ class UserList(Resource):
                   type: string
         """
         data = request.get_json()
+
         user = database.User()
-        user.name = data['name']
         user.email = data['email']
         user.password = bcrypt.hashpw(data['password'].encode('utf-8'), bcrypt.gensalt(12))
 
@@ -262,13 +262,21 @@ class UserList(Resource):
             database.db_session.flush()
             database.db_session.commit()
             flask_login.login_user(user)
-            return {
-                'message': "User created"
-            }, 200
         else:
             return {
                 'error': "User already exists"
             }, 400
+
+        profile = database.UserProfile()
+        profile.id = user.id
+        profile.display_name = data['name']
+        database.db_session.add(profile)
+        database.db_session.flush()
+        database.db_session.commit()
+
+        return {
+            'message': "User created"
+        }, 200
 
 class UserProfiles(Resource):
     @login_required
