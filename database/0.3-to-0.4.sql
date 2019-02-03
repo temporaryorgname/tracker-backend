@@ -22,7 +22,8 @@ CREATE TABLE public.user_profile (
 	state varchar(128),
 	city varchar(128)
 );
-INSERT INTO public.user_profile (id, display_name, last_activity) SELECT id, name, last_activity FROM public.users;
+--- All users using pounds up until this point
+INSERT INTO public.user_profile (id, display_name, last_activity, prefered_units) SELECT id, name, last_activity, 'lbs' FROM public.users;
 
 ALTER TABLE public.users DROP COLUMN name;
 ALTER TABLE public.users DROP COLUMN last_activity;
@@ -37,7 +38,7 @@ ALTER TABLE public.tag DROP COLUMN parent_id;
 --- Convert everything to SI units
 UPDATE public.body SET bodyweight=bodyweight*0.45359237;
 
-ALTER TABLE public.food ALTER COLUMN name VARCHAR(255);
+ALTER TABLE public.food ALTER COLUMN name TYPE varchar(255);
 
 ----------------------------------------------------------------------------------------------------
 --- Update script ends here
