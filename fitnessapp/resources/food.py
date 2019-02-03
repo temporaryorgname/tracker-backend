@@ -390,10 +390,11 @@ class FoodSummary(Resource):
         foods = database.engine.execute("""
             SELECT date, SUM(calories)
             FROM public.food
-            WHERE date > '%s'
+            WHERE date > '{start_date}'
+              AND user_id = '{user_id}'
             GROUP BY date
             ORDER BY date DESC
-        """ % start_date)
+        """.format(start_date=start_date, user_id=current_user.get_id()))
         def cast_decimal(dec):
             if dec is None:
                 return None
