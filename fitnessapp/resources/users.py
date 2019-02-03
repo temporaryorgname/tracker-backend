@@ -270,6 +270,7 @@ class UserList(Resource):
         profile = database.UserProfile()
         profile.id = user.id
         profile.display_name = data['name']
+        profile.prefered_units = 'kg'
         database.db_session.add(profile)
         database.db_session.flush()
         database.db_session.commit()
