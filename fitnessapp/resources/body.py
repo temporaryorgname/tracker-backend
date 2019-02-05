@@ -349,12 +349,27 @@ class BodyweightSummary(Resource):
             slope,_ = np.polyfit(x,y,1)
             weight_change_per_day = slope*(24*60*60)*units_scale
 
+        # Compute average bodyweight
+        avg_weight = 0
+        count = 0
+        for w in reversed(weights):
+            if datetime.date.today()-w.date > datetime.timedelta(days=7) and count > 5:
+                break
+            avg_weight += float(w.bodyweight)
+            count += 1
+        avg_weight *= units_scale
+        if count == 0:
+            avg_weight = None
+        else:
+            avg_weight /= count
+
         return {
             'by_time': mean_by_hour,
             'normalized_by_time': normalized_mean_by_hour,
             'history': history,
             'weight_change_per_day': weight_change_per_day,
-            'units': units
+            'units': units,
+            'avg_weight': avg_weight
         }, 200
 
 api.add_resource(BodyweightList, '/body/weights')
