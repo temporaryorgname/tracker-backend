@@ -269,6 +269,8 @@ class BodyweightSummary(Resource):
                 .filter_by(user_id=current_user.get_id()) \
                 .filter(database.Bodyweight.time.isnot(None)) \
                 .filter(database.Bodyweight.bodyweight.isnot(None)) \
+                .order_by(database.Bodyweight.date) \
+                .order_by(database.Bodyweight.time) \
                 .all()
         units = database.UserProfile.query \
                 .with_entities(

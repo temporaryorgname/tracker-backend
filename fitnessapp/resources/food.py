@@ -420,6 +420,10 @@ class FoodSummary(Resource):
             GROUP BY date
             ORDER BY date DESC
         """.format(start_date=start_date, user_id=current_user.get_id()))
+
+        # Save the data so we can iterate over it more than once
+        foods = [x for x in foods]
+
         def cast_decimal(dec):
             if dec is None:
                 return None
