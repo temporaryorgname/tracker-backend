@@ -270,12 +270,21 @@ class BodyweightSummary(Resource):
                 .filter(database.Bodyweight.time.isnot(None)) \
                 .filter(database.Bodyweight.bodyweight.isnot(None)) \
                 .all()
+        units = database.UserProfile.query \
+                .with_entities(
+                        database.UserProfile.prefered_units
+                )\
+                .filter_by(id=current_user.get_id()) \
+                .one()[0]
+        units_scale = 1
+        if units == 'lbs':
+            units_scale = 1/0.45359237
 
         # Compute mean weight by time of day
         weight_by_hour = [[] for _ in range(24)]
         for w in weights:
             weight_by_hour[w.time.hour].append(float(w.bodyweight))
-        mean_by_hour = [np.mean(x) if len(x) > 0 else None for x in weight_by_hour]
+        mean_by_hour = [np.mean(x)*units_scale if len(x) > 0 else None for x in weight_by_hour]
 
         # Compute history
         num_buckets = 20
@@ -288,15 +297,37 @@ class BodyweightSummary(Resource):
             while w.date > start_date+(current_bucket+1)*bucket_size:
                 current_bucket += 1
             weight_buckets[current_bucket].append(float(w.bodyweight))
-        mean_weights_over_time = [np.mean(x) if len(x)>0 else None for x in weight_buckets]
+        mean_weights_over_time = [np.mean(x)*units_scale if len(x)>0 else None for x in weight_buckets]
+        history = {
+            'start_date': str(start_date),
+            'end_date': str(end_date),
+            'data': mean_weights_over_time
+        }
+
+        # Compute rate of change
+        points = []
+        rate_of_change = None
+        start_date = weights[0].date-datetime.timedelta(days=7)
+        for w in weights:
+            if w.date < start_date:
+                continue
+            points.append((
+                (w.date-start_date).total_seconds(),
+                float(w.bodyweight)
+            ))
+        weight_change_per_day = None
+        if len(points) > 2:
+            # Compute line of best fit
+            x = [t for t,w in points]
+            y = [w for t,w in points]
+            slope,_ = np.polyfit(x,y,1)
+            weight_change_per_day = slope*(24*60*60)*units_scale
 
         return {
             'by_time': mean_by_hour,
-            'history': {
-                'start_date': str(start_date),
-                'end_date': str(end_date),
-                'data': mean_weights_over_time
-            }
+            'history': history,
+            'weight_change_per_day': weight_change_per_day,
+            'units': units
         }, 200
 
 api.add_resource(BodyweightList, '/body/weights')
