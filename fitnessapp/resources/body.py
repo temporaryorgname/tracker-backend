@@ -288,6 +288,30 @@ class BodyweightSummary(Resource):
             weight_by_hour[w.time.hour].append(float(w.bodyweight))
         mean_by_hour = [np.mean(x)*units_scale if len(x) > 0 else None for x in weight_by_hour]
 
+        # Compute normalized mean weight by time of day
+        window_size = datetime.timedelta(days=7)
+        min_window_points = 5
+        window_start_index = 0 # Window includes this point
+        window_end_index = 0 # Window excludes this point
+        for i,w in enumerate(weights):
+            if w.date > weights[0].date+window_size/2:
+                window_end_index = i
+                break
+        normalized_weight_by_hour = [[] for _ in range(24)]
+        for w in weights:
+            while weights[window_start_index].date < w.date-window_size/2:
+                window_start_index += 1
+            while window_end_index < len(weights) and weights[window_end_index].date < w.date+window_size/2:
+                window_end_index += 1
+            while window_end_index-window_start_index < min_window_points:
+                window_start_index -= 1
+                window_end_index += 1
+            window_start_index = max(0,window_start_index)
+            window_end_index = min(len(weights),window_end_index)
+            mean_val = np.mean([float(w.bodyweight) for w in weights[window_start_index:window_end_index]])
+            normalized_weight_by_hour[w.time.hour].append(float(w.bodyweight)/mean_val-1)
+        normalized_mean_by_hour = [np.mean(x) if len(x) > 0 else None for x in normalized_weight_by_hour]
+
         # Compute history
         num_buckets = 20
         start_date = weights[0].date
@@ -327,6 +351,7 @@ class BodyweightSummary(Resource):
 
         return {
             'by_time': mean_by_hour,
+            'normalized_by_time': normalized_mean_by_hour,
             'history': history,
             'weight_change_per_day': weight_change_per_day,
             'units': units
