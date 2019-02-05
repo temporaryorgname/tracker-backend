@@ -224,6 +224,8 @@ class FoodList(Resource):
                     type: number
                   photo_id:
                     type: integer
+                  photo_ids:
+                    type: list 
                   photo_group_id:
                     type: integer
         responses:
@@ -239,6 +241,28 @@ class FoodList(Resource):
 
         f = database.Food.from_dict(data)
         f.user_id = current_user.get_id()
+
+        # Check if there are multiple photos. If so, create a group for them.
+        if 'photo_ids' in data:
+            group = database.PhotoGroup()
+            group.user_id = current_user.get_id()
+            group.date = data['date']
+            database.db_session.add(group)
+            database.db_session.flush()
+
+            f.photo_group_id = group.id
+
+            for photo_id in data['photo_ids']:
+                photo = database.Photo.query \
+                        .filter_by(id=photo_id) \
+                        .filter_by(user_id=current_user.get_id()) \
+                        .first()
+                if photo is None:
+                    return {
+                        'error': 'Invalid photo ID: %d' % photo_id
+                    }, 400
+                photo.group_id = group.id
+
         try:
             f.validate()
         except Exception as e:

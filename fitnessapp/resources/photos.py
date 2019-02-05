@@ -326,9 +326,10 @@ class PhotoData(Resource):
                   type: string
                   description: A base64 representation of the image file.
         """
-        size = int(request.args.get('size'))
+        size = request.args.get('size')
         if size is None:
             size = 32
+        size = int(size)
         if size not in [32,700]:
             return {'error': 'Unsupported size.'}, 400
 
@@ -381,9 +382,12 @@ class PhotoData(Resource):
         img_str = base64.b64encode(buffered.getvalue())
         # TODO: Return a application/octect-stream response instead of a JSON-wrapped base64 string.
         return {
+            'id': photo_id,
+            'format': 'png',
             'data': img_str.decode()
         }, 200
 
 api.add_resource(PhotoList, '/photos')
 api.add_resource(Photos, '/photos/<int:photo_id>')
-api.add_resource(PhotoData, '/photos/<int:photo_id>/data')
+#api.add_resource(PhotoData, '/photos/<int:photo_id>/data')
+api.add_resource(PhotoData, '/photo_data/<int:photo_id>')

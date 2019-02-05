@@ -281,7 +281,7 @@ class UserProfile(Base):
     def validate(self):
         if self.display_name is None:
             raise ValueError("No name provided.")
-        if len(self.display_name) is None:
+        if len(self.display_name) == 0:
             raise ValueError("Invalid name.")
         if self.target_weight is not None:
             try:
