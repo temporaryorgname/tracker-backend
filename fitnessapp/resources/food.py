@@ -12,6 +12,7 @@ import os
 from PIL import Image
 import base64
 from io import BytesIO
+import numpy as np
 
 import os
 import boto3
@@ -410,7 +411,7 @@ class FoodSummary(Resource):
                   type: array
                   description: A list of total calories consumed in the last week. The number at index 0 is today's Calorie consumption, 1 is yesterday, etc.
         """
-        start_date = str(datetime.date.today()-datetime.timedelta(days=7))
+        start_date = datetime.date.today()-datetime.timedelta(days=7)
         foods = database.engine.execute("""
             SELECT date, SUM(calories)
             FROM public.food
@@ -428,7 +429,25 @@ class FoodSummary(Resource):
                 'date': str(f[0]),
                 'calories': cast_decimal(f[1]),
             }
-        return [to_dict(f) for f in foods], 200
+        # Compute rate of change of Calorie consumption
+        points = []
+        for time,cals in foods:
+            if cals is None:
+                continue
+            time = (time-start_date).total_seconds()
+            cals = int(cals)
+            points.append((time,cals))
+        calorie_change_per_day = None
+        if len(points) > 2:
+            # Compute line of best fit
+            x = [t for t,c in points]
+            y = [c for t,c in points]
+            slope,_ = np.polyfit(x,y,1)
+            calorie_change_per_day = slope*(24*60*60)
+        return {
+            'history': [to_dict(f) for f in foods],
+            'calorie_change_per_day': calorie_change_per_day
+        }, 200
 
 api.add_resource(FoodList, '/foods')
 api.add_resource(Food, '/foods/<int:food_id>')
