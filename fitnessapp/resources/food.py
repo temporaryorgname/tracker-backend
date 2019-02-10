@@ -18,6 +18,7 @@ import os
 import boto3
 
 from fitnessapp import database
+from fitnessapp import dbutils
 
 blueprint = Blueprint('food', __name__)
 api = Api(blueprint)
@@ -64,7 +65,20 @@ class Food(Resource):
                 .filter_by(user_id=current_user.get_id()) \
                 .filter_by(id=food_id) \
                 .one()
-        return food.to_dict(), 200
+        if food.photo_group_id is not None:
+            photo_ids = database.Photo.query \
+                    .with_entities(
+                            database.Photo.id
+                    )\
+                    .filter_by(user_id=current_user.get_id()) \
+                    .filter_by(group_id=food.photo_group_id) \
+                    .all()
+            photo_ids = [x[0] for x in photo_ids]
+        elif food.photo_id is not None:
+            photo_ids = [food.photo_id]
+        else:
+            photo_ids = []
+        return {**food.to_dict(), 'photo_ids': photo_ids}, 200
 
     @login_required
     def put(self, food_id):
@@ -185,19 +199,22 @@ class FoodList(Resource):
                 $ref: '#/definitions/Food'
         """
         date = request.args.get('date')
-        date = datetime.datetime.strptime(date, '%Y-%m-%d')
         if date is None:
             foods = database.Food.query \
                     .filter_by(user_id=current_user.get_id()) \
+                    .filter(database.Food.parent_id.is_(None)) \
                     .order_by(database.Food.id) \
                     .all()
         else:
             foods = database.Food.query \
                     .order_by(database.Food.date.desc()) \
-                    .filter_by(date=date, user_id=current_user.get_id()) \
+                    .filter_by(user_id=current_user.get_id()) \
+                    .filter_by(date=date) \
+                    .filter(database.Food.parent_id.is_(None)) \
                     .order_by(database.Food.id) \
                     .all()
-        data = [f.to_dict() for f in foods]
+            print(len(foods), 'entries found')
+        data = [dbutils.food_to_json(f, True, True) for f in foods]
         return data, 200
 
     @login_required
@@ -223,12 +240,8 @@ class FoodList(Resource):
                     type: number
                   protein:
                     type: number
-                  photo_id:
-                    type: integer
                   photo_ids:
-                    type: list 
-                  photo_group_id:
-                    type: integer
+                    type: array
         responses:
           201:
             description: ID of newly-created entry.
@@ -239,44 +252,15 @@ class FoodList(Resource):
                   type: integer
         """
         data = request.get_json()
-
-        f = database.Food.from_dict(data)
-        f.user_id = current_user.get_id()
-
-        # Check if there are multiple photos. If so, create a group for them.
-        if 'photo_ids' in data:
-            group = database.PhotoGroup()
-            group.user_id = current_user.get_id()
-            group.date = data['date']
-            database.db_session.add(group)
-            database.db_session.flush()
-
-            f.photo_group_id = group.id
-
-            for photo_id in data['photo_ids']:
-                photo = database.Photo.query \
-                        .filter_by(id=photo_id) \
-                        .filter_by(user_id=current_user.get_id()) \
-                        .first()
-                if photo is None:
-                    return {
-                        'error': 'Invalid photo ID: %d' % photo_id
-                    }, 400
-                photo.group_id = group.id
-
         try:
-            f.validate()
+            ids = dbutils.update_food_from_dict(data, user_id=current_user.get_id())
         except Exception as e:
             return {
                 'error': str(e)
             }, 400
 
-        database.db_session.add(f)
-        database.db_session.flush()
-        database.db_session.commit()
-
         return {
-            'id': str(f.id)
+            'ids': ids 
         }, 201
 
     @login_required

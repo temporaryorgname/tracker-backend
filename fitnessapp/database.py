@@ -2,8 +2,9 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import scoped_session, sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 
-from sqlalchemy import Column, Integer, String, Float
+from sqlalchemy import Column, Integer, String, Float, Date, Time
 
+import datetime
 import os
 
 if 'LOGS_DB_URI' in os.environ:
@@ -30,19 +31,19 @@ def cast_none(val, t):
 class Food(Base):
     __tablename__ = 'food'
     id = Column(Integer, primary_key=True)
-    user_id = Column()
-    date = Column()
-    time = Column()
+    user_id = Column(Integer)
+    date = Column(Date)
+    time = Column(Time)
 
-    name = Column()
-    quantity = Column()
-    calories = Column()
-    protein = Column()
+    name = Column(String)
+    quantity = Column(String)
+    calories = Column(Float)
+    protein = Column(Float)
 
-    parent_id = Column()
+    parent_id = Column(Integer)
 
-    photo_id = Column()
-    photo_group_id = Column()
+    photo_id = Column(Integer)
+    photo_group_id = Column(Integer)
 
     def to_dict(self):
         # Return as dictionary
@@ -53,8 +54,7 @@ class Food(Base):
             "quantity": self.quantity,
             "calories": cast_none(self.calories, float),
             "protein": cast_none(self.protein, float),
-            "photo_id": self.photo_id,
-            "photo_group_id": self.photo_group_id
+            "parent_id": self.parent_id
         }
 
     @classmethod
@@ -68,6 +68,9 @@ class Food(Base):
             self.name = data['name']
         if 'date' in data:
             self.date = data['date']
+            if data['date'] is not None:
+                y,m,d = data['date'].split('-')
+                data['date'] = datetime.date(int(y), int(m), int(d))
         else:
             self.date = datetime.datetime.now()
         if 'quantity' in data:

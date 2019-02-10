@@ -18,6 +18,7 @@ import os
 import boto3
 
 from fitnessapp import database
+from fitnessapp import dbutils
 
 s3 = boto3.resource('s3')
 if 'LOGS_PHOTO_BUCKET_NAME' in os.environ:
@@ -387,7 +388,52 @@ class PhotoData(Resource):
             'data': img_str.decode()
         }, 200
 
+class PhotoFood(Resource):
+    @login_required
+    def get(self, photo_id):
+        """ Return the food entry associated with the given photo.
+        ---
+        tags:
+          - photos
+          - food
+        parameters:
+          - name: id
+            in: path
+            type: integer
+            required: true
+        responses:
+          200:
+            description: Food entry
+            schema:
+              $ref: '#/definitions/Food'
+        """
+        photo = database.Photo.query \
+                .filter_by(user_id=current_user.get_id()) \
+                .filter_by(id=photo_id) \
+                .first()
+        if photo is None:
+            return {
+                'error': 'Photo ID not found'
+            }, 404
+
+        if photo.group_id is None:
+            food = database.Food.query \
+                    .filter_by(user_id=current_user.get_id()) \
+                    .filter_by(photo_id=photo_id) \
+                    .filter_by(parent_id=None) \
+                    .all()
+        else:
+            food = database.Food.query \
+                    .filter_by(user_id=current_user.get_id()) \
+                    .filter_by(photo_group_id=photo.group_id) \
+                    .filter_by(parent_id=None) \
+                    .all()
+        return [dbutils.food_to_json(
+            f, with_photos=True, with_children=True
+        ) for f in food], 200
+
 api.add_resource(PhotoList, '/photos')
 api.add_resource(Photos, '/photos/<int:photo_id>')
 #api.add_resource(PhotoData, '/photos/<int:photo_id>/data')
 api.add_resource(PhotoData, '/photo_data/<int:photo_id>')
+api.add_resource(PhotoFood, '/photos/<int:photo_id>/food')
