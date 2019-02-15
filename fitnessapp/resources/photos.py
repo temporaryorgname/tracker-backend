@@ -86,7 +86,22 @@ class Photos(Resource):
                 error:
                   type: string
         """
-        return {'error': 'Not implemented'}, 501
+        data = request.get_json()
+        photo = database.Photo.query \
+                .filter_by(id=photo_id) \
+                .filter_by(user_id=current_user.get_id()) \
+                .first()
+
+        if photo is None:
+            return {'error': 'No photo found with this ID.'}, 404
+
+        if data['group_id']:
+            photo.group_id = int(data['group_id'])
+
+        database.db_session.flush()
+        database.db_session.commit()
+
+        return {'message': 'Updated successfully'}, 200
 
     @login_required
     def delete(self, photo_id):

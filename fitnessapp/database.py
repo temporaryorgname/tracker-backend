@@ -50,6 +50,7 @@ class Food(Base):
         return {
             "id": self.id, 
             "date": str(self.date),
+            "time": cast_none(self.time, str),
             "name": self.name, 
             "quantity": self.quantity,
             "calories": cast_none(self.calories, float),
@@ -73,6 +74,8 @@ class Food(Base):
                 data['date'] = datetime.date(int(y), int(m), int(d))
         else:
             self.date = datetime.datetime.now()
+        if 'time' in data:
+            self.time = data['time']
         if 'quantity' in data:
             self.quantity = data['quantity']
         if 'calories' in data:

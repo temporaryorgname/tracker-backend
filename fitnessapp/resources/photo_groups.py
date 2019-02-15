@@ -14,6 +14,7 @@ import base64
 from io import BytesIO
 
 from fitnessapp import database
+from fitnessapp import dbutils
 
 blueprint = Blueprint('photo_groups', __name__)
 api = Api(blueprint)
@@ -252,5 +253,77 @@ class PhotoGroupList(Resource):
         database.db_session.commit()
         return {"message": "Deleted successfully"}, 200
 
+class PhotoGroupFood(Resource):
+    @login_required
+    def get(self, group_id):
+        """ Return the food entry associated with the given photo group.
+        ---
+        tags:
+          - photo groups
+          - food
+        parameters:
+          - name: id
+            in: path
+            type: integer
+            required: true
+        responses:
+          200:
+            description: Food entry
+            schema:
+              $ref: '#/definitions/Food'
+        """
+        group = database.PhotoGroup.query \
+                .filter_by(user_id=current_user.get_id()) \
+                .filter_by(id=group_id) \
+                .first()
+        if group is None:
+            return {
+                'error': 'Photo group ID not found'
+            }, 404
+
+        food = database.Food.query \
+                .filter_by(user_id=current_user.get_id()) \
+                .filter_by(photo_group_id=group.id) \
+                .filter_by(parent_id=None) \
+                .all()
+        return [dbutils.food_to_json(
+            f, with_photos=True, with_children=True
+        ) for f in food], 200
+
+class PhotoGroupPhotos(Resource):
+    @login_required
+    def get(self, group_id):
+        """ Return the photos associated with the given photo group.
+        ---
+        tags:
+          - photo groups
+          - photos
+        parameters:
+          - name: id
+            in: path
+            type: integer
+            required: true
+        responses:
+          200:
+            schema:
+              $ref: '#/definitions/Photo'
+        """
+        group = database.PhotoGroup.query \
+                .filter_by(user_id=current_user.get_id()) \
+                .filter_by(id=group_id) \
+                .first()
+        if group is None:
+            return {
+                'error': 'Photo group ID not found'
+            }, 404
+
+        photos = database.Photo.query \
+                .filter_by(user_id=current_user.get_id()) \
+                .filter_by(group_id=group.id) \
+                .all()
+        return [p.to_dict() for p in photos], 200
+
 api.add_resource(PhotoGroups, '/photo_groups/<int:group_id>')
 api.add_resource(PhotoGroupList, '/photo_groups')
+api.add_resource(PhotoGroupFood, '/photo_groups/<int:group_id>/food')
+api.add_resource(PhotoGroupPhotos, '/photo_groups/<int:group_id>/photos')

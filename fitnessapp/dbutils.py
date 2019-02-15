@@ -44,6 +44,7 @@ def update_food_from_dict(data, user_id, parent_id=None):
         user_id: User who owns these entries
         parent_id: ID of the food entry that is parent to the entry represented by `data`.
     """
+    # If editing an existing entry, load it up. Otherwise, create a new entry.
     if 'id' in data and data['id'] is not None:
         f = database.Food.query \
             .filter_by(id = data['id']) \
