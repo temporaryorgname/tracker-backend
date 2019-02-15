@@ -333,7 +333,7 @@ class BodyweightSummary(Resource):
         # Compute rate of change
         points = []
         rate_of_change = None
-        start_date = weights[0].date-datetime.timedelta(days=7)
+        start_date = weights[-1].date-datetime.timedelta(days=7)
         for w in weights:
             if w.date < start_date:
                 continue
