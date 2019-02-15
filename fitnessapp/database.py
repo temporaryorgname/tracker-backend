@@ -74,7 +74,7 @@ class Food(Base):
                 data['date'] = datetime.date(int(y), int(m), int(d))
         else:
             self.date = datetime.datetime.now()
-        if 'time' in data:
+        if 'time' in data and data['time'] != '':
             self.time = data['time']
         if 'quantity' in data:
             self.quantity = data['quantity']

@@ -6,6 +6,7 @@ from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.sql import func
 from werkzeug.utils import secure_filename
 from flasgger import SwaggerView
+import traceback
 
 import datetime
 import os
@@ -255,6 +256,7 @@ class FoodList(Resource):
         try:
             ids = dbutils.update_food_from_dict(data, user_id=current_user.get_id())
         except Exception as e:
+            print(traceback.format_exc())
             return {
                 'error': str(e)
             }, 400
