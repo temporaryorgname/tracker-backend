@@ -60,7 +60,7 @@ class PhotoGroups(Resource):
             return {
                 'error': 'Photo ID not found'
             }, 404
-        return group.to_dict(), 200
+        return dbutils.photo_group_to_dict(group, with_photos=True), 200
 
     @login_required
     def put(self, group_id):
@@ -159,7 +159,7 @@ class PhotoGroupList(Resource):
                 .filter_by(user_id=current_user.get_id()) \
                 .filter_by(**filter_params) \
                 .all()
-        data = [g.to_dict() for g in groups]
+        data = [dbutils.photo_group_to_dict(g, with_photos=True) for g in groups]
         return data, 200
 
     @login_required
@@ -286,7 +286,7 @@ class PhotoGroupFood(Resource):
                 .filter_by(photo_group_id=group.id) \
                 .filter_by(parent_id=None) \
                 .all()
-        return [dbutils.food_to_json(
+        return [dbutils.food_to_dict(
             f, with_photos=True, with_children=True
         ) for f in food], 200
 

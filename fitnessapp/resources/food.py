@@ -215,7 +215,7 @@ class FoodList(Resource):
                     .order_by(database.Food.id) \
                     .all()
             print(len(foods), 'entries found')
-        data = [dbutils.food_to_json(f, True, True) for f in foods]
+        data = [dbutils.food_to_dict(f, True, True) for f in foods]
         return data, 200
 
     @login_required
@@ -261,8 +261,16 @@ class FoodList(Resource):
                 'error': str(e)
             }, 400
 
+        foods = database.Food.query \
+                .filter_by(user_id=current_user.get_id()) \
+                .filter(database.Food.id.in_(ids)) \
+                .all()
+
         return {
-            'ids': ids 
+            'ids': ids,
+            'entities': [
+                dbutils.food_to_dict(f, True, True) for f in foods
+            ]
         }, 201
 
     @login_required
@@ -307,10 +315,8 @@ class FoodList(Resource):
                 return {
                     "error": "Unable to find food entry with ID %d." % food_id
                 }, 404
-            database.db_session.delete(f)
+            dbutils.delete_food(f)
 
-        database.db_session.flush()
-        database.db_session.commit()
         return {"message": "Deleted successfully"}, 200
 
 class FoodSearch(Resource):

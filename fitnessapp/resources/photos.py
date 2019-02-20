@@ -1,6 +1,5 @@
 from flask import Blueprint
 from flask import request
-from flask import current_app as app
 from flask_restful import Api, Resource
 from flask_login import login_required, current_user
 from flask_sqlalchemy import SQLAlchemy
@@ -9,22 +8,9 @@ from werkzeug.utils import secure_filename
 from flasgger import SwaggerView
 
 import datetime
-import os
-from PIL import Image
-import base64
-from io import BytesIO
-
-import os
-import boto3
 
 from fitnessapp import database
 from fitnessapp import dbutils
-
-s3 = boto3.resource('s3')
-if 'LOGS_PHOTO_BUCKET_NAME' in os.environ:
-    PHOTO_BUCKET_NAME = os.environ['LOGS_PHOTO_BUCKET_NAME']
-else:
-    PHOTO_BUCKET_NAME = 'dev-hhixl-food-photos-700'
 
 blueprint = Blueprint('photos', __name__)
 api = Api(blueprint)
@@ -183,7 +169,7 @@ class PhotoList(Resource):
                 .filter_by(user_id=current_user.get_id()) \
                 .filter_by(**filter_params) \
                 .all()
-        return [p.to_dict() for p in photos], 200
+        return [dbutils.photo_to_dict(p, with_data=True) for p in photos], 200
 
     @login_required
     def post(self):
@@ -230,39 +216,14 @@ class PhotoList(Resource):
             photo.time = request.form.get('time')
             database.db_session.add(photo)
             database.db_session.flush()
-            database.db_session.commit()
-            # Use ID as file name
-            photo.file_name = photo.id
-            filename = str(photo.file_name)
-            # Save file
-            filename_original = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-            filename_700 = os.path.join(app.config['UPLOAD_FOLDER'],'%s-700' % filename)
-            filename_32 = os.path.join(app.config['UPLOAD_FOLDER'],'%s-32' % filename)
-            file.save(filename_original)
-            # Resize photo
-            img = Image.open(filename_original)
-            img.thumbnail((700,700))
-            # Remove transparency if there's an alpha channel
-            if img.mode in ('RGBA', 'LA') or (img.mode == 'P' and 'transparency' in img.info):
-                print('Found transparency. Processing alpha channels.')
-                alpha = img.split()[3]
-                background = Image.new("RGB", img.size, (255, 255, 255))
-                background.paste(img, mask=alpha)
-                img = background
-            # Save smaller image
-            img.save(filename_700, 'jpeg') 
-            # Upload small image to AWS
-            with open(filename_700, 'rb') as data:
-                s3.Bucket(PHOTO_BUCKET_NAME).put_object(Key=filename, Body=data)
-            # Resize to tiny thumbnail size
-            img.thumbnail((32,32))
-            img.save(filename_32, 'jpeg') 
-            # Delete large local files
-            os.remove(filename_original)
-            os.remove(filename_700)
+            # Save photo
+            file_name = str(photo.id)
+            photo.file_name = file_name
+            dbutils.save_photo_data(file, file_name=file_name)
             # Save file name
             database.db_session.flush()
             database.db_session.commit()
+
             return {'id': photo.id},200
 
     @login_required
@@ -342,65 +303,27 @@ class PhotoData(Resource):
                   type: string
                   description: A base64 representation of the image file.
         """
+        allowed_sizes = [32,700]
         size = request.args.get('size')
         if size is None:
             size = 32
         size = int(size)
-        if size not in [32,700]:
-            return {'error': 'Unsupported size.'}, 400
-
-        filename = str(photo_id)
-        fp = database.Photo.query \
-                .filter_by(id=photo_id) \
-                .one()
-        if fp is None:
-            return "File ID not found.", 404
-
-        def get_Local_image(size):
-            filename = os.path.join(
-                    app.config['UPLOAD_FOLDER'],
-                    '%s-%s'%(fp.file_name, size))
-            try:
-                return Image.open(filename)
-            except Exception:
-                print('Failed to load tiny thumbnail locally for file %s.' % filename)
-        def get_s3_image(size):
-            filename = os.path.join(
-                    app.config['UPLOAD_FOLDER'],
-                    '%s-700'%(fp.file_name))
-            filename_resized = os.path.join(
-                    app.config['UPLOAD_FOLDER'],
-                    '%s-%s'%(fp.file_name,size))
-            try:
-                with open(filename, "wb") as f:
-                    s3.Bucket(PHOTO_BUCKET_NAME) \
-                      .Object(str(photo_id)) \
-                      .download_fileobj(f)
-                img = Image.open(filename)
-                if size == 700:
-                    return img
-                img.thumbnail((size,size))
-                img.save(filename_resized,'PNG')
-                return img
-            except Exception as e:
-                print("Unable to retrieve file %s from AWS servers." % filename)
-
-        img = get_Local_image(size)
-        if img is None:
-            img = get_s3_image(size)
-        if img is None:
+        if size not in allowed_sizes:
             return {
-                'error': 'Unable to retrieve file %s' % filename
-            }, 404
+                'error': 'Unsupported photo size. %d was provided, but only vaues %s are allowed.' % (size, allowed_sizes)
+            }, 400
 
-        buffered = BytesIO()
-        img.save(buffered, format="PNG")
-        img_str = base64.b64encode(buffered.getvalue())
+        try:
+            data = dbutils.get_photo_data_base64(photo_id, format='png', size=size)
+        except Exception as e:
+            return {
+                'error': str(e)
+            }, 400
         # TODO: Return a application/octect-stream response instead of a JSON-wrapped base64 string.
         return {
             'id': photo_id,
             'format': 'png',
-            'data': img_str.decode()
+            'data': data
         }, 200
 
 class PhotoFood(Resource):

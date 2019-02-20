@@ -53,9 +53,11 @@ class Food(Base):
             "time": cast_none(self.time, str),
             "name": self.name, 
             "quantity": self.quantity,
-            "calories": cast_none(self.calories, float),
-            "protein": cast_none(self.protein, float),
-            "parent_id": self.parent_id
+            "calories": self.calories,
+            "protein": self.protein,
+            "parent_id": self.parent_id,
+            "photo_id": self.photo_id,
+            "photo_group_id": self.photo_group_id,
         }
 
     @classmethod

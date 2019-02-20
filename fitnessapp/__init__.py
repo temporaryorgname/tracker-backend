@@ -80,6 +80,8 @@ def react_paths(path):
 
 @app.errorhandler(sqlalchemy.exc.TimeoutError)
 def timeouterror_handler(error):
+    print(traceback.format_exc())
+    database.db_session.rollback()
     return json.dumps({
         'error': 'Server too busy. Try again later.'
     }), 503
@@ -87,6 +89,7 @@ def timeouterror_handler(error):
 @app.errorhandler(Exception)
 def exception_handler(error):
     print(traceback.format_exc())
+    database.db_session.rollback()
     return json.dumps({
         'error': 'Server error encountered'
     }), 500
