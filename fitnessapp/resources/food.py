@@ -383,8 +383,9 @@ class FoodSearch(Resource):
                 'protein': cast_decimal(f[3]),
                 'count': f[4]
             }
-        data = [to_dict(f) for f in foods]
-        return data, 200
+        return {
+            'history': [to_dict(f) for f in foods]
+        }, 200
 
 class FoodSummary(Resource):
     @login_required

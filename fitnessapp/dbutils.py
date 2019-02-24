@@ -150,6 +150,45 @@ def delete_food(food, depth=0):
     if depth == 0:
         database.db_session.commit()
 
+def search_food_history(search_term, user_id):
+    """ Search the user's history for the search term
+    """
+    foods = database.Food.query \
+            .with_entities(
+                    func.mode().within_group(database.Food.name),
+                    database.Food.quantity,
+                    database.Food.calories,
+                    database.Food.protein,
+                    func.count('*'),
+                    func.max(database.Food.date)
+            ) \
+            .filter_by(user_id=user_id)) \
+            .filter(database.Food.name.ilike('%{0}%'.format(query))) \
+            .group_by(
+                    func.lower(database.Food.name),
+                    database.Food.quantity,
+                    database.Food.calories,
+                    database.Food.protein,
+            ) \
+            .order_by(func.count('*').desc()) \
+            .limit(5) \
+            .all()
+
+    def cast_decimal(dec):
+        if dec is None:
+            return None
+        return float(dec)
+    def to_dict(f):
+        return {
+            'name': f[0],
+            'quantity': f[1],
+            'calories': cast_decimal(f[2]),
+            'protein': cast_decimal(f[3]),
+            'count': f[4]
+        }
+
+    return [to_dict(f) for f in foods]
+
 def photo_group_to_dict(group, with_photos=False):
     """ Convert a photo group entry to a dictionary, along with a list of photo IDs
     """
