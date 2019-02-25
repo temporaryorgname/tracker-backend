@@ -352,39 +352,11 @@ class FoodSearch(Resource):
         if 'q' not in request.args:
             return 'Invalid request. A query is required.', 400
         query = request.args['q']
-        foods = database.Food.query \
-                .with_entities(
-                        func.mode().within_group(database.Food.name),
-                        database.Food.quantity,
-                        database.Food.calories,
-                        database.Food.protein,
-                        func.count('*')
-                ) \
-                .filter_by(user_id=current_user.get_id()) \
-                .filter(database.Food.name.ilike('%{0}%'.format(query))) \
-                .group_by(
-                        func.lower(database.Food.name),
-                        database.Food.quantity,
-                        database.Food.calories,
-                        database.Food.protein,
-                ) \
-                .order_by(func.count('*').desc()) \
-                .limit(5) \
-                .all()
-        def cast_decimal(dec):
-            if dec is None:
-                return None
-            return float(dec)
-        def to_dict(f):
-            return {
-                'name': f[0],
-                'quantity': f[1],
-                'calories': cast_decimal(f[2]),
-                'protein': cast_decimal(f[3]),
-                'count': f[4]
-            }
         return {
-            'history': [to_dict(f) for f in foods]
+            'history': dbutils.search_food_history(query, user_id=current_user.get_id()),
+            'recent': dbutils.search_food_recent(query, user_id=current_user.get_id()),
+            'verified': [],
+            'community': []
         }, 200
 
 class FoodSummary(Resource):

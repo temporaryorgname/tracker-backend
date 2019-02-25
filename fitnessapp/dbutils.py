@@ -162,7 +162,7 @@ def search_food_history(search_term, user_id):
                     func.count('*'),
                     func.max(database.Food.date)
             ) \
-            .filter_by(user_id=user_id)) \
+            .filter_by(user_id=user_id) \
             .filter(database.Food.name.ilike('%{0}%'.format(query))) \
             .group_by(
                     func.lower(database.Food.name),
@@ -185,6 +185,44 @@ def search_food_history(search_term, user_id):
             'calories': cast_decimal(f[2]),
             'protein': cast_decimal(f[3]),
             'count': f[4]
+        }
+
+    return [to_dict(f) for f in foods]
+
+def search_food_recent(search_term, user_id):
+    """ Search the user's history for the search term and return the five most recent matching entries.
+    """
+    foods = database.Food.query \
+            .with_entities(
+                    database.Food.name,
+                    database.Food.quantity,
+                    database.Food.calories,
+                    database.Food.protein,
+                    database.Food.date
+            ) \
+            .filter_by(user_id=user_id) \
+            .filter(database.Food.name.ilike('%{0}%'.format(query))) \
+            .group_by(
+                    func.lower(database.Food.name),
+                    database.Food.quantity,
+                    database.Food.calories,
+                    database.Food.protein,
+            ) \
+            .order_by(database.Food.date) \
+            .limit(5) \
+            .all()
+
+    def cast_decimal(dec):
+        if dec is None:
+            return None
+        return float(dec)
+    def to_dict(f):
+        return {
+            'name': f[0],
+            'quantity': f[1],
+            'calories': cast_decimal(f[2]),
+            'protein': cast_decimal(f[3]),
+            'date': str(f[4]) if f[4] is not None else None
         }
 
     return [to_dict(f) for f in foods]
