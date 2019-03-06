@@ -1,3 +1,4 @@
+from sqlalchemy.sql import func
 import datetime
 import os
 from PIL import Image
@@ -163,7 +164,7 @@ def search_food_history(search_term, user_id):
                     func.max(database.Food.date)
             ) \
             .filter_by(user_id=user_id) \
-            .filter(database.Food.name.ilike('%{0}%'.format(query))) \
+            .filter(database.Food.name.ilike('%{0}%'.format(search_term))) \
             .group_by(
                     func.lower(database.Food.name),
                     database.Food.quantity,
@@ -201,14 +202,8 @@ def search_food_recent(search_term, user_id):
                     database.Food.date
             ) \
             .filter_by(user_id=user_id) \
-            .filter(database.Food.name.ilike('%{0}%'.format(query))) \
-            .group_by(
-                    func.lower(database.Food.name),
-                    database.Food.quantity,
-                    database.Food.calories,
-                    database.Food.protein,
-            ) \
-            .order_by(database.Food.date) \
+            .filter(database.Food.name.ilike('%{0}%'.format(search_term))) \
+            .order_by(database.Food.date.desc()) \
             .limit(5) \
             .all()
 
