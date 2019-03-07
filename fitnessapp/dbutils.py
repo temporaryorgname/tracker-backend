@@ -290,7 +290,7 @@ def get_photo_data_base64(photo_id, format='png', size=32):
     # TODO: Return a application/octect-stream response instead of a JSON-wrapped base64 string.
     return img_str.decode()
 
-def save_photo_data(file, file_name):
+def save_photo_data(file, file_name, delete_local=True):
     print('saving file ', file_name)
     # Save file
     file_name_original = os.path.join(app.config['UPLOAD_FOLDER'], file_name)
@@ -316,8 +316,15 @@ def save_photo_data(file, file_name):
     img.thumbnail((32,32))
     img.save(file_name_32, 'jpeg') 
     # Delete large local files
-    os.remove(file_name_original)
-    os.remove(file_name_700)
+    if delete_local:
+        os.remove(file_name_original)
+        os.remove(file_name_700)
+
+def get_photo_exif(file_name):
+    # Save file
+    file_name_original = os.path.join(app.config['UPLOAD_FOLDER'], file_name)
+    img = Image.open(file_name_original)
+    return img._getexif()
 
 def photo_to_dict(photo, with_data=False, photo_size=32):
     output = photo.to_dict()
@@ -327,3 +334,11 @@ def photo_to_dict(photo, with_data=False, photo_size=32):
                 'content': get_photo_data_base64(photo.id, format='png', size=photo_size)
         }
     return output
+
+def autogoup_photos(photo_ids):
+    # Group by time taken and photo similarity
+    pass
+
+def autogenerate_food_entry(photo_ids):
+    """ Given a list of photo IDs, create a food entry to go with it """
+    pass

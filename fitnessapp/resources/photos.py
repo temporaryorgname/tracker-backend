@@ -214,12 +214,20 @@ class PhotoList(Resource):
             photo.upload_time = datetime.datetime.utcnow()
             photo.date = request.form.get('date')
             photo.time = request.form.get('time')
+
             database.db_session.add(photo)
             database.db_session.flush()
+
             # Save photo
             file_name = str(photo.id)
             photo.file_name = file_name
-            dbutils.save_photo_data(file, file_name=file_name)
+            dbutils.save_photo_data(file, file_name=file_name, delete_local=False)
+            # Get EXIF data if needed
+            exif_data = dbutils.get_photo_exif(file_name)
+            if photo.time is None and 0x9003 in exif_data:
+                photo.time = exif_data[0x9003].split(' ')[1]
+            if photo.date is None and 0x9003 in exif_data:
+                photo.date = exif_data[0x9003].split(' ')[0].replace(':','-')
             # Save file name
             database.db_session.flush()
             database.db_session.commit()
