@@ -49,7 +49,7 @@ def food_to_dict(food, with_photos=False, with_children=False):
 
     return output
 
-def update_food_from_dict(data, user_id, parent_id=None):
+def update_food_from_dict(data, user_id, parent=None):
     """ Parse a dictionary representing a food entry and return make the appropriate updates in the database
     Args:
         data: dictionary representing the food entry.
@@ -69,7 +69,9 @@ def update_food_from_dict(data, user_id, parent_id=None):
         f = database.Food.from_dict(data)
         f.user_id = user_id
 
-    f.parent_id = parent_id
+    if parent is not None:
+        f.parent_id = parent.id
+        f.date = parent.date
 
     if 'photo_ids' in data:
         # Check if the photos are already part of a group
@@ -129,10 +131,10 @@ def update_food_from_dict(data, user_id, parent_id=None):
     # Parse children
     if 'children' in data:
         for child in data['children']:
-            ids += update_food_from_dict(child, user_id, parent_id=f.id)
+            ids += update_food_from_dict(child, user_id, parent=f)
 
     # Commit once when everything is done.
-    if parent_id is None:
+    if parent is None:
         database.db_session.commit()
 
     return ids
