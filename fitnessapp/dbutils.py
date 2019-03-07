@@ -1,4 +1,5 @@
-from sqlalchemy.sql import func
+from collections import defaultdict
+from sqlalchemy.sql import func, or_, and_
 import datetime
 import os
 from PIL import Image
@@ -342,6 +343,60 @@ def autogoup_photos(photo_ids):
     # Group by time taken and photo similarity
     pass
 
-def autogenerate_food_entry(photo_ids):
-    """ Given a list of photo IDs, create a food entry to go with it """
-    pass
+def autogenerate_food_entry(photos):
+    """ Given a list of photos, create a food entry to go with it """
+    # Get photo date and data
+    date = photos[0].date
+    user_id = photos[0].user_id
+    photo_group_id = photos[0].group_id
+    photo_id = photos[0].id
+    if len(photos) > 1:
+        photo_id = None
+    # Check that date and user id matches for all photos
+    for p in photos:
+        if p.date != date:
+            raise Exception('Photos were not taken on the same date.')
+        if p.user_id != user_id:
+            raise Exception('Photos do not belong to the same user.')
+        if p.group_id != photo_group_id:
+            raise Exception('Photos do not belong to the same group.')
+    # Pass through classifiers or object detectors and see if it matches with any known foods
+    # Create appropriate entry
+    food = database.Food()
+    food.name = 'Unknown'
+    food.date = date
+    food.user_id = user_id
+    food.photo_id = photo_id
+    food.photo_group_id = photo_group_id
+    database.db_session.add(food)
+    database.db_session.flush()
+    database.db_session.commit()
+    print('Creating food entry', food.id)
+
+def autogenerate_food_entry_for_date(date):
+    # Get all photos and photo groups for the given date
+    photos = database.Photo().query \
+            .filter_by(date=date) \
+            .all()
+    photos_by_group = defaultdict(lambda: [])
+    for p in photos:
+        # Check if there's already an entry for that photo
+        foods = database.Food().query \
+                .filter(or_(
+                    database.Food.photo_id==p.id,
+                    and_(
+                        database.Food.photo_group_id==p.group_id,
+                        p.group_id is not None
+                    )
+                )).all()
+        if len(foods) > 0:
+            print('Food entry already exists for photo', p.id)
+            continue
+        photos_by_group[p.group_id].append(p)
+    # Call autogenerate_food_entry on each photo or photo group
+    for k,v in photos_by_group.items():
+        if k is None:
+            for p in v:
+                autogenerate_food_entry([p])
+        else:
+            autogenerate_food_entry(v)
