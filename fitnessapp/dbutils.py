@@ -64,6 +64,7 @@ def update_food_from_dict(data, user_id, parent_id=None):
             .filter_by(id = data['id']) \
             .filter_by(user_id=user_id) \
             .first()
+        f.update_from_dict(data)
     else:
         f = database.Food.from_dict(data)
         f.user_id = user_id

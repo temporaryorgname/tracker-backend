@@ -112,28 +112,7 @@ class Food(Resource):
                   type: string
         """
         data = request.get_json()
-
-        # Check that there's an entry at this location belonging to the current user
-        f = database.Food.query \
-                .filter_by(id=food_id) \
-                .filter_by(user_id=current_user.get_id()) \
-                .first()
-        if f is None:
-            return {
-                'error': "ID not found"
-            }, 404
-
-        # Create new Food object
-        f.update_from_dict(data)
-        try:
-            f.validate()
-        except Exception as e:
-            return {
-                'error': str(e)
-            }, 400
-
-        database.db_session.commit()
-
+        dbutils.update_food_from_dict(data, current_user.get_id())
         return {'message': 'success'}, 200
 
     @login_required
