@@ -358,9 +358,13 @@ class FoodSummary(Resource):
         start_date = datetime.date.today()-datetime.timedelta(days=7)
         foods = database.engine.execute("""
             SELECT date, SUM(calories)
-            FROM public.food
+            FROM public.food as t
             WHERE date > '{start_date}'
               AND user_id = '{user_id}'
+              AND (
+                parent_id IS NULL
+                OR (SELECT calories FROM public.food WHERE id=t.parent_id) IS NULL
+              )
             GROUP BY date
             ORDER BY date DESC
         """.format(start_date=start_date, user_id=current_user.get_id()))
