@@ -1,9 +1,10 @@
-from flask import Blueprint
+from flask import Blueprint, Response, send_file
 from flask import request
 from flask_restful import Api, Resource
 from flask_login import login_required, current_user
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.sql import func
+from werkzeug import FileWrapper
 from werkzeug.utils import secure_filename
 from flasgger import SwaggerView
 
@@ -122,10 +123,8 @@ class Photos(Resource):
             return {
                 "error": "Unable to find photo with ID %d." % photo_id
             }, 404
-        database.db_session.delete(p)
+        dbutils.delete_photo(p)
 
-        database.db_session.flush()
-        database.db_session.commit()
         return {"message": "Deleted successfully"}, 200
 
 class PhotoList(Resource):
@@ -224,10 +223,11 @@ class PhotoList(Resource):
             dbutils.save_photo_data(file, file_name=file_name, delete_local=False)
             # Get EXIF data if needed
             exif_data = dbutils.get_photo_exif(file_name)
-            if photo.time is None and 0x9003 in exif_data:
-                photo.time = exif_data[0x9003].split(' ')[1]
-            if photo.date is None and 0x9003 in exif_data:
-                photo.date = exif_data[0x9003].split(' ')[0].replace(':','-')
+            if exif_data is not None:
+                if photo.time is None and 0x9003 in exif_data:
+                    photo.time = exif_data[0x9003].split(' ')[1]
+                if photo.date is None and 0x9003 in exif_data:
+                    photo.date = exif_data[0x9003].split(' ')[0].replace(':','-')
             # Save file name
             database.db_session.flush()
             database.db_session.commit()
@@ -274,13 +274,12 @@ class PhotoList(Resource):
                     .filter_by(id=photo_id) \
                     .filter_by(user_id=current_user.get_id()) \
                     .one()
-            if f is None:
+            if p is None:
                 return {
                     "error": "Unable to find photo with ID %d." % photo_id
                 }, 404
-            database.db_session.delete(p)
+            dbutils.delete_photo(p, commit=False)
 
-        database.db_session.flush()
         database.db_session.commit()
         return {"message": "Deleted successfully"}, 200
 
@@ -378,8 +377,37 @@ class PhotoFood(Resource):
             f, with_photos=True, with_children=True
         ) for f in food], 200
 
+class PhotoFile(Resource):
+    @login_required
+    def get(self, photo_id):
+        """ Return the file saved under the given photo id.
+        ---
+        tags:
+          - photos
+        parameters:
+          - name: id
+            in: path
+            type: integer
+            required: true
+        responses:
+          200:
+            description: PNG File
+        """
+        photo = database.Photo.query \
+                .filter_by(user_id=current_user.get_id()) \
+                .filter_by(id=photo_id) \
+                .first()
+        if photo is None:
+            return {
+                'error': 'Photo ID not found'
+            }, 404
+
+        file_name = dbutils.get_photo_file_name(photo.id, format='png', size=700)
+        return send_file(file_name, mimetype='image/png', attachment_filename='file.png')
+
 api.add_resource(PhotoList, '/photos')
 api.add_resource(Photos, '/photos/<int:photo_id>')
 #api.add_resource(PhotoData, '/photos/<int:photo_id>/data')
 api.add_resource(PhotoData, '/photo_data/<int:photo_id>')
 api.add_resource(PhotoFood, '/photos/<int:photo_id>/food')
+api.add_resource(PhotoFile, '/photos/<int:photo_id>/file')

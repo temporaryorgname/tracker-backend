@@ -226,6 +226,7 @@ def search_food_recent(search_term, user_id):
 
     return [to_dict(f) for f in foods]
 
+
 def photo_group_to_dict(group, with_photos=False):
     """ Convert a photo group entry to a dictionary, along with a list of photo IDs
     """
@@ -243,7 +244,7 @@ def photo_group_to_dict(group, with_photos=False):
         output['photo_ids'] = [x[0] for x in photo_ids]
     return output
 
-def get_photo_data_base64(photo_id, format='png', size=32):
+def get_photo_file_name(photo_id, format='png', size=32):
     filename = str(photo_id)
     fp = database.Photo.query \
             .filter_by(id=photo_id) \
@@ -251,21 +252,19 @@ def get_photo_data_base64(photo_id, format='png', size=32):
     if fp is None:
         raise Exception("File ID not found.")
 
-    def get_Local_image(size):
-        filename = os.path.join(
+    local_file_name = os.path.join(
                 app.config['UPLOAD_FOLDER'],
                 '%s-%s'%(fp.file_name, size))
+    def get_Local_image(size):
         try:
-            return Image.open(filename)
+            return Image.open(local_file_name)
         except Exception:
             print('Failed to load tiny thumbnail locally for file %s.' % filename)
     def get_s3_image(size):
         filename = os.path.join(
                 app.config['UPLOAD_FOLDER'],
                 '%s-700'%(fp.file_name))
-        filename_resized = os.path.join(
-                app.config['UPLOAD_FOLDER'],
-                '%s-%s'%(fp.file_name,size))
+        filename_resized = local_file_name
         try:
             with open(filename, "wb") as f:
                 s3.Bucket(PHOTO_BUCKET_NAME) \
@@ -288,10 +287,15 @@ def get_photo_data_base64(photo_id, format='png', size=32):
             'Unable to retrieve file %s.' % filename
         )
 
+    return local_file_name
+
+def get_photo_data_base64(photo_id, format='png', size=32):
+    file_name = get_photo_file_name(photo_id, format, size)
+    with open(file_name, 'rb') as f:
+        img = Image.open(f)
     buffered = BytesIO()
     img.save(buffered, format=format)
     img_str = base64.b64encode(buffered.getvalue())
-    # TODO: Return a application/octect-stream response instead of a JSON-wrapped base64 string.
     return img_str.decode()
 
 def save_photo_data(file, file_name, delete_local=True):
@@ -333,11 +337,21 @@ def get_photo_exif(file_name):
 def photo_to_dict(photo, with_data=False, photo_size=32):
     output = photo.to_dict()
     if with_data:
-        output['file'] = {
-                'format': 'png',
-                'content': get_photo_data_base64(photo.id, format='png', size=photo_size)
-        }
+        output['file_url'] = '/data/photos/%d/file' % photo.id
     return output
+
+def delete_photo(photo, commit=True):
+    # Get food entries that reference this photo and remove the reference
+    food = database.Food().query \
+            .filter_by(photo_id = photo.id) \
+            .all()
+    for f in food:
+        f.photo_id = None
+    database.db_session.delete(photo)
+    database.db_session.flush()
+    if commit:
+        database.db_session.commit()
+
 
 def autogoup_photos(photo_ids):
     # Group by time taken and photo similarity
