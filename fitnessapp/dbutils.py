@@ -24,19 +24,14 @@ def food_to_dict(food, with_photos=False, with_children=False):
 
     # Add photo data
     if with_photos:
-        if food.photo_group_id is not None:
-            photo_ids = database.Photo.query \
-                    .with_entities(
-                            database.Photo.id
-                    )\
-                    .filter_by(user_id=food.user_id) \
-                    .filter_by(group_id=food.photo_group_id) \
-                    .all()
-            output['photo_ids'] = [x[0] for x in photo_ids]
-        elif food.photo_id is not None:
-            output['photo_ids'] = [food.photo_id]
-        else:
-            output['photo_ids'] = []
+        photo_ids = database.Photo.query \
+                .with_entities(
+                        database.Photo.id
+                )\
+                .filter_by(user_id=food.user_id) \
+                .filter_by(food_id=food.id) \
+                .all()
+        output['photo_ids'] = [x[0] for x in photo_ids]
 
     # Add children data
     if with_children:
@@ -69,62 +64,21 @@ def update_food_from_dict(data, user_id, parent=None):
     else:
         f = database.Food.from_dict(data)
         f.user_id = user_id
+        database.db_session.add(f)
 
     if parent is not None:
         f.parent_id = parent.id
         f.date = parent.date
 
     if 'photo_ids' in data:
-        # Check if the photos are already part of a group
-        # If so, assign the food entry to that group
-        # If different photos are part of different groups, then remove them from those groups and create a new one
-        # If not, then either create a new group, or assign it to the single photo
         photos = database.Photo.query \
                 .filter(database.Photo.id.in_(data['photo_ids'])) \
                 .all()
-
-        # Photos should be assigned to the same date
         for p in photos:
-            if str(p.date) != data['date']:
-                raise ValueError('Provided photos do not belong to the same date as the created food entry. Photo was taken on %s and the entry is being created for %s.' % (p.date, data['date']))
+            if p.food_id is not None and p.food_id != f.id:
+                raise Exception('Photo %d is already assigned to diet entry %d. Cannot reassign.' % (p.id, p.food_id))
+            p.food_id = f.id
 
-        # Ensure they all belong to the same group
-        group_ids = set([p.group_id for p in photos if p.group_id is not None])
-        # TODO: Ensure that there are no other photos in the group
-        if len(group_ids) == 1:
-            # There's already a group assigned to the photo(s), so use that
-            group = database.PhotoGroup.query \
-                    .filter_by(id = list(group_ids)[0]) \
-                    .first()
-            if group.date != data['date']:
-                raise ValueError('Provided photo group does not belong to the same date as the created food entry.')
-            f.photo_group_id = group.id
-            f.photo_id = None
-        elif len(photos) > 1:
-            # No group or multiple groups were assigned to the photos,
-            # so create one
-            group = database.PhotoGroup()
-            group.date = data['date']
-            group.user_id = user_id
-            database.db_session.add(group)
-            database.db_session.flush()
-            f.photo_group_id = group.id
-            f.photo_id = None
-            for p in photos:
-                p.group_id = group.id
-        elif len(photos) == 1:
-            # No group was assigned, and there was only one photo,
-            # so no group is needed
-            group = None
-            f.photo_group_id = None
-            f.photo_id = photos[0].id
-        else:
-            # No photos
-            group = None
-            f.photo_group_id = None
-            f.photo_id = None
-
-    database.db_session.add(f)
     database.db_session.flush()
 
     ids = [int(f.id)]
@@ -226,23 +180,6 @@ def search_food_recent(search_term, user_id):
 
     return [to_dict(f) for f in foods]
 
-
-def photo_group_to_dict(group, with_photos=False):
-    """ Convert a photo group entry to a dictionary, along with a list of photo IDs
-    """
-    output = group.to_dict()
-
-    # Add photo data
-    if with_photos:
-        photo_ids = database.PhotoGroup.query \
-                .with_entities(
-                        database.Photo.id
-                )\
-                .filter_by(user_id=group.user_id) \
-                .filter_by(group_id=group.id) \
-                .all()
-        output['photo_ids'] = [x[0] for x in photo_ids]
-    return output
 
 def get_photo_file_name(photo_id, format='png', size=32):
     filename = str(photo_id)
@@ -362,7 +299,6 @@ def autogenerate_food_entry(photos):
     # Get photo date and data
     date = photos[0].date
     user_id = photos[0].user_id
-    photo_group_id = photos[0].group_id
     photo_id = photos[0].id
     if len(photos) > 1:
         photo_id = None
@@ -372,8 +308,6 @@ def autogenerate_food_entry(photos):
             raise Exception('Photos were not taken on the same date.')
         if p.user_id != user_id:
             raise Exception('Photos do not belong to the same user.')
-        if p.group_id != photo_group_id:
-            raise Exception('Photos do not belong to the same group.')
     # Pass through classifiers or object detectors and see if it matches with any known foods
     # Create appropriate entry
     food = database.Food()
@@ -381,36 +315,14 @@ def autogenerate_food_entry(photos):
     food.date = date
     food.user_id = user_id
     food.photo_id = photo_id
-    food.photo_group_id = photo_group_id
     database.db_session.add(food)
+    database.db_session.flush()
+    for p in photos:
+        p.food_id = food.id
     database.db_session.flush()
     database.db_session.commit()
     print('Creating food entry', food.id)
 
 def autogenerate_food_entry_for_date(date):
-    # Get all photos and photo groups for the given date
-    photos = database.Photo().query \
-            .filter_by(date=date) \
-            .all()
-    photos_by_group = defaultdict(lambda: [])
-    for p in photos:
-        # Check if there's already an entry for that photo
-        foods = database.Food().query \
-                .filter(or_(
-                    database.Food.photo_id==p.id,
-                    and_(
-                        database.Food.photo_group_id==p.group_id,
-                        p.group_id is not None
-                    )
-                )).all()
-        if len(foods) > 0:
-            print('Food entry already exists for photo', p.id)
-            continue
-        photos_by_group[p.group_id].append(p)
-    # Call autogenerate_food_entry on each photo or photo group
-    for k,v in photos_by_group.items():
-        if k is None:
-            for p in v:
-                autogenerate_food_entry([p])
-        else:
-            autogenerate_food_entry(v)
+    # TODO
+    pass

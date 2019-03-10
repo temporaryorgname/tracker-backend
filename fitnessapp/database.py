@@ -42,9 +42,6 @@ class Food(Base):
 
     parent_id = Column(Integer)
 
-    photo_id = Column(Integer)
-    photo_group_id = Column(Integer)
-
     def to_dict(self):
         # Return as dictionary
         return {
@@ -56,8 +53,6 @@ class Food(Base):
             "calories": self.calories,
             "protein": self.protein,
             "parent_id": self.parent_id,
-            "photo_id": self.photo_id,
-            "photo_group_id": self.photo_group_id,
         }
 
     @classmethod
@@ -84,10 +79,6 @@ class Food(Base):
             self.calories = cast_none(data['calories'], float)
         if 'protein' in data:
             self.protein = cast_none(data['protein'], float)
-        if 'photo_id' in data:
-            self.photo_id = data['photo_id']
-        if 'photo_group_id' in data:
-            self.photo_group_id = data['photo_group_id']
 
     def validate(self):
         return True
@@ -100,7 +91,7 @@ class Photo(Base):
     date = Column()
     time = Column()
     upload_time = Column()
-    group_id = Column(Integer)
+    food_id = Column(Integer)
 
     def to_dict(self):
         return {
@@ -108,37 +99,8 @@ class Photo(Base):
             "user_id": self.user_id,
             "date": cast_none(self.date, str),
             "time": cast_none(self.time, str),
-            "group_id": cast_none(self.group_id, int)
+            "food_id": cast_none(self.food_id, int)
         }
-
-class PhotoGroup(Base):
-    __tablename__ = 'photo_group'
-    id = Column(Integer, primary_key=True)
-    parent_id = Column(Integer)
-    user_id = Column(Integer)
-    date = Column()
-
-    def to_dict(self):
-        return {
-            "id": self.id,
-            "user_id": self.user_id,
-            "parent_id": self.parent_id,
-            "date": str(self.date)
-        }
-
-    @classmethod
-    def from_dict(cls, data):
-        f = cls()
-        f.update_from_dict(data)
-        return f
-
-    def update_from_dict(self, data):
-        if 'date' in data:
-            self.date = data['date']
-        if 'parent_id' in data:
-            self.parent_id = data['parent_id']
-        if 'user_id' in data:
-            self.user_id = data['user_id']
 
 class Tag(Base):
     __tablename__ = 'tag'
