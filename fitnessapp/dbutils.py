@@ -65,6 +65,7 @@ def update_food_from_dict(data, user_id, parent=None):
         f = database.Food.from_dict(data)
         f.user_id = user_id
         database.db_session.add(f)
+        database.db_session.flush()
 
     if parent is not None:
         f.parent_id = parent.id

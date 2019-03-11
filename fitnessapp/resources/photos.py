@@ -37,9 +37,9 @@ class Photos(Resource):
               user_id:
                 type: integer
                 description: ID of the user who uploaded this photo.
-              group_id:
+              food_id:
                 type: integer
-                description: ID of the group of photos this photo belongs to.
+                description: ID of food entry associated with this photo.
               date:
                 type: string
                 description: Date on which the photo was taken.
