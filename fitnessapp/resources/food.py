@@ -66,20 +66,7 @@ class Food(Resource):
                 .filter_by(user_id=current_user.get_id()) \
                 .filter_by(id=food_id) \
                 .one()
-        if food.photo_group_id is not None:
-            photo_ids = database.Photo.query \
-                    .with_entities(
-                            database.Photo.id
-                    )\
-                    .filter_by(user_id=current_user.get_id()) \
-                    .filter_by(group_id=food.photo_group_id) \
-                    .all()
-            photo_ids = [x[0] for x in photo_ids]
-        elif food.photo_id is not None:
-            photo_ids = [food.photo_id]
-        else:
-            photo_ids = []
-        return {**food.to_dict(), 'photo_ids': photo_ids}, 200
+        return dbutils.food_to_dict(food, with_photos=True, with_children=True), 200
 
     @login_required
     def put(self, food_id):

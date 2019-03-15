@@ -1,5 +1,5 @@
 from collections import defaultdict
-from sqlalchemy.sql import func, or_, and_
+from sqlalchemy.sql import func, or_, and_, not_
 import datetime
 import os
 from PIL import Image
@@ -70,6 +70,14 @@ def update_food_from_dict(data, user_id, parent=None):
     if parent is not None:
         f.parent_id = parent.id
         f.date = parent.date
+
+    if f.id is not None:
+        photos = database.Photo.query \
+                .filter_by(food_id=f.id) \
+                .filter(not_(database.Photo.id.in_(data['photo_ids']))) \
+                .all()
+        for p in photos:
+            p.food_id = None
 
     if 'photo_ids' in data:
         photos = database.Photo.query \
