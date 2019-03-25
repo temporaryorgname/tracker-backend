@@ -12,7 +12,7 @@ if 'LOGS_DB_URI' in os.environ:
 else:
     db_uri = 'postgresql://howardh:verysecurepassword@localhost:5432/howardh'
 print('Initialized DB at %s' % db_uri)
-engine = create_engine(db_uri, convert_unicode=True)
+engine = create_engine(db_uri, convert_unicode=True, pool_size=10, max_overflow=20)
 db_session = scoped_session(sessionmaker(autocommit=False,
                                          autoflush=False,
                                          bind=engine))

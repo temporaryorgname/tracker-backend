@@ -39,8 +39,8 @@ def food_to_dict(food, with_photos=False, with_children=False):
                 .filter_by(user_id=food.user_id) \
                 .filter_by(parent_id=food.id) \
                 .all()
-        output['children'] = [
-            food_to_dict(c, with_photos, with_children) for c in children
+        output['children_ids'] = [
+            c.id for c in children
         ]
 
     return output
@@ -71,15 +71,16 @@ def update_food_from_dict(data, user_id, parent=None):
         f.parent_id = parent.id
         f.date = parent.date
 
-    if f.id is not None:
-        photos = database.Photo.query \
-                .filter_by(food_id=f.id) \
-                .filter(not_(database.Photo.id.in_(data['photo_ids']))) \
-                .all()
-        for p in photos:
-            p.food_id = None
-
     if 'photo_ids' in data:
+        # Unset food id
+        if f.id is not None:
+            photos = database.Photo.query \
+                    .filter_by(food_id=f.id) \
+                    .filter(not_(database.Photo.id.in_(data['photo_ids']))) \
+                    .all()
+            for p in photos:
+                p.food_id = None
+        # Set food id
         photos = database.Photo.query \
                 .filter(database.Photo.id.in_(data['photo_ids'])) \
                 .all()

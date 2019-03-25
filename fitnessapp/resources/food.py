@@ -177,7 +177,6 @@ class FoodList(Resource):
                     .order_by(database.Food.date.desc()) \
                     .filter_by(user_id=current_user.get_id()) \
                     .filter_by(date=date) \
-                    .filter(database.Food.parent_id.is_(None)) \
                     .order_by(database.Food.id) \
                     .all()
             print(len(foods), 'entries found')
@@ -276,11 +275,9 @@ class FoodList(Resource):
             f = database.Food.query \
                     .filter_by(id=food_id) \
                     .filter_by(user_id=current_user.get_id()) \
-                    .one()
+                    .first()
             if f is None:
-                return {
-                    "error": "Unable to find food entry with ID %d." % food_id
-                }, 404
+                continue
             dbutils.delete_food(f)
 
         return {"message": "Deleted successfully"}, 200
