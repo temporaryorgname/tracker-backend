@@ -165,6 +165,7 @@ def search_food_recent(search_term, user_id):
     """
     foods = database.Food.query \
             .with_entities(
+                    database.Food.id,
                     database.Food.name,
                     database.Food.quantity,
                     database.Food.calories,
@@ -183,11 +184,12 @@ def search_food_recent(search_term, user_id):
         return float(dec)
     def to_dict(f):
         return {
-            'name': f[0],
-            'quantity': f[1],
-            'calories': cast_decimal(f[2]),
-            'protein': cast_decimal(f[3]),
-            'date': str(f[4]) if f[4] is not None else None
+            'id': f[0],
+            'name': f[1],
+            'quantity': f[2],
+            'calories': cast_decimal(f[3]),
+            'protein': cast_decimal(f[4]),
+            'date': str(f[5]) if f[5] is not None else None
         }
 
     return [to_dict(f) for f in foods]
@@ -197,11 +199,12 @@ def search_food_premade(search_term, user_id):
     """
     foods = database.Food.query \
             .with_entities(
+                    database.Food.id,
                     database.Food.name,
                     database.Food.quantity,
                     database.Food.calories,
                     database.Food.protein,
-                    database.Food.date
+                    database.Food.date,
             ) \
             .filter_by(user_id=user_id) \
             .filter(database.Food.premade == True) \
@@ -216,11 +219,12 @@ def search_food_premade(search_term, user_id):
         return float(dec)
     def to_dict(f):
         return {
-            'name': f[0],
-            'quantity': f[1],
-            'calories': cast_decimal(f[2]),
-            'protein': cast_decimal(f[3]),
-            'date': str(f[4]) if f[4] is not None else None
+            'id': f[0],
+            'name': f[1],
+            'quantity': f[2],
+            'calories': cast_decimal(f[3]),
+            'protein': cast_decimal(f[4]),
+            'date': str(f[5]) if f[5] is not None else None
         }
 
     return [to_dict(f) for f in foods]
