@@ -316,7 +316,7 @@ class FoodSearch(Resource):
             return 'Invalid request. A query is required.', 400
         query = request.args['q']
         return {
-            'history': dbutils.search_food_history(query, user_id=current_user.get_id()),
+            'frequent': dbutils.search_food_frequent(query, user_id=current_user.get_id()),
             'recent': dbutils.search_food_recent(query, user_id=current_user.get_id()),
             'premade': dbutils.search_food_premade(query, user_id=current_user.get_id()),
             'verified': [],

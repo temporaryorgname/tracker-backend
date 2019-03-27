@@ -119,8 +119,9 @@ def delete_food(food, depth=0):
     if depth == 0:
         database.db_session.commit()
 
-def search_food_history(search_term, user_id):
-    """ Search the user's history for the search term
+def search_food_frequent(search_term, user_id):
+    """ Search the user's history for the search term, ordered by frequency.
+    Food items that have been logged more often will appear first.
     """
     foods = database.Food.query \
             .with_entities(
@@ -204,10 +205,9 @@ def search_food_premade(search_term, user_id):
             ) \
             .filter_by(user_id=user_id) \
             .filter(database.Food.premade == True) \
-            .filter(database.Food.finished == False) \
+            .filter(or_(database.Food.finished == False, database.Food.finished == None)) \
             .filter(database.Food.name.ilike('%{0}%'.format(search_term))) \
             .order_by(database.Food.date.desc()) \
-            .limit(5) \
             .all()
 
     def cast_decimal(dec):
