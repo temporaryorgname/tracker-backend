@@ -132,6 +132,7 @@ def search_food_history(search_term, user_id):
                     func.max(database.Food.date)
             ) \
             .filter_by(user_id=user_id) \
+            .filter(not_(database.Food.name == '')) \
             .filter(database.Food.name.ilike('%{0}%'.format(search_term))) \
             .group_by(
                     func.lower(database.Food.name),
@@ -170,6 +171,40 @@ def search_food_recent(search_term, user_id):
                     database.Food.date
             ) \
             .filter_by(user_id=user_id) \
+            .filter(database.Food.name.ilike('%{0}%'.format(search_term))) \
+            .order_by(database.Food.date.desc()) \
+            .limit(5) \
+            .all()
+
+    def cast_decimal(dec):
+        if dec is None:
+            return None
+        return float(dec)
+    def to_dict(f):
+        return {
+            'name': f[0],
+            'quantity': f[1],
+            'calories': cast_decimal(f[2]),
+            'protein': cast_decimal(f[3]),
+            'date': str(f[4]) if f[4] is not None else None
+        }
+
+    return [to_dict(f) for f in foods]
+
+def search_food_premade(search_term, user_id):
+    """ Search the user's history for the search term and return the five most recent matching entries.
+    """
+    foods = database.Food.query \
+            .with_entities(
+                    database.Food.name,
+                    database.Food.quantity,
+                    database.Food.calories,
+                    database.Food.protein,
+                    database.Food.date
+            ) \
+            .filter_by(user_id=user_id) \
+            .filter(database.Food.premade == True) \
+            .filter(database.Food.finished == False) \
             .filter(database.Food.name.ilike('%{0}%'.format(search_term))) \
             .order_by(database.Food.date.desc()) \
             .limit(5) \

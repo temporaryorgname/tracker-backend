@@ -318,6 +318,7 @@ class FoodSearch(Resource):
         return {
             'history': dbutils.search_food_history(query, user_id=current_user.get_id()),
             'recent': dbutils.search_food_recent(query, user_id=current_user.get_id()),
+            'premade': dbutils.search_food_premade(query, user_id=current_user.get_id()),
             'verified': [],
             'community': []
         }, 200
