@@ -17,7 +17,7 @@ if 'LOGS_PHOTO_BUCKET_NAME' in os.environ:
 else:
     PHOTO_BUCKET_NAME = 'dev-hhixl-food-photos-700'
 
-def food_to_dict(food, with_photos=False, with_children=False):
+def food_to_dict(food, with_photos=False, with_children_ids=False, with_children_data=False):
     """ Convert a food entry to a dictionary, along with a list of photo IDs, and children
     """
     output = food.to_dict()
@@ -34,13 +34,21 @@ def food_to_dict(food, with_photos=False, with_children=False):
         output['photo_ids'] = [x[0] for x in photo_ids]
 
     # Add children data
-    if with_children:
+    if with_children_ids:
         children = database.Food.query \
                 .filter_by(user_id=food.user_id) \
                 .filter_by(parent_id=food.id) \
                 .all()
         output['children_ids'] = [
             c.id for c in children
+        ]
+    if with_children_data:
+        children = database.Food.query \
+                .filter_by(user_id=food.user_id) \
+                .filter_by(parent_id=food.id) \
+                .all()
+        output['children'] = [
+            food_to_dict(c, with_photos, with_children_ids, with_children_data) for c in children
         ]
 
     return output
@@ -164,70 +172,24 @@ def search_food_recent(search_term, user_id):
     """ Search the user's history for the search term and return the five most recent matching entries.
     """
     foods = database.Food.query \
-            .with_entities(
-                    database.Food.id,
-                    database.Food.name,
-                    database.Food.quantity,
-                    database.Food.calories,
-                    database.Food.protein,
-                    database.Food.date
-            ) \
             .filter_by(user_id=user_id) \
             .filter(database.Food.name.ilike('%{0}%'.format(search_term))) \
             .order_by(database.Food.date.desc()) \
             .limit(5) \
             .all()
-
-    def cast_decimal(dec):
-        if dec is None:
-            return None
-        return float(dec)
-    def to_dict(f):
-        return {
-            'id': f[0],
-            'name': f[1],
-            'quantity': f[2],
-            'calories': cast_decimal(f[3]),
-            'protein': cast_decimal(f[4]),
-            'date': str(f[5]) if f[5] is not None else None
-        }
-
-    return [to_dict(f) for f in foods]
+    return [food_to_dict(f, with_children_data=True) for f in foods]
 
 def search_food_premade(search_term, user_id):
     """ Search the user's history for the search term and return the five most recent matching entries.
     """
     foods = database.Food.query \
-            .with_entities(
-                    database.Food.id,
-                    database.Food.name,
-                    database.Food.quantity,
-                    database.Food.calories,
-                    database.Food.protein,
-                    database.Food.date,
-            ) \
             .filter_by(user_id=user_id) \
             .filter(database.Food.premade == True) \
             .filter(or_(database.Food.finished == False, database.Food.finished == None)) \
             .filter(database.Food.name.ilike('%{0}%'.format(search_term))) \
             .order_by(database.Food.date.desc()) \
             .all()
-
-    def cast_decimal(dec):
-        if dec is None:
-            return None
-        return float(dec)
-    def to_dict(f):
-        return {
-            'id': f[0],
-            'name': f[1],
-            'quantity': f[2],
-            'calories': cast_decimal(f[3]),
-            'protein': cast_decimal(f[4]),
-            'date': str(f[5]) if f[5] is not None else None
-        }
-
-    return [to_dict(f) for f in foods]
+    return [food_to_dict(f, with_children_data=True) for f in foods]
 
 
 def get_photo_file_name(photo_id, format='png', size=32):

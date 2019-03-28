@@ -9,9 +9,9 @@ IF EXISTS (select * from meta where key='SCHEMA_VERSION' AND value='0.5') THEN
 
 UPDATE public.meta SET value='0.6' WHERE key='SCHEMA_VERSION';
 
---ALTER TABLE public.food DROP COLUMN photo_id;
---ALTER TABLE public.food DROP COLUMN photo_group_id;
---ALTER TABLE public.photo DROP COLUMN group_id;
+ALTER TABLE public.food DROP COLUMN photo_id;
+ALTER TABLE public.food DROP COLUMN photo_group_id;
+ALTER TABLE public.photo DROP COLUMN group_id;
 
 CREATE TABLE public.data_food(
 	id integer PRIMARY KEY,

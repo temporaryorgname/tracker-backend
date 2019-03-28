@@ -66,7 +66,7 @@ class Food(Resource):
                 .filter_by(user_id=current_user.get_id()) \
                 .filter_by(id=food_id) \
                 .one()
-        return dbutils.food_to_dict(food, with_photos=True, with_children=True), 200
+        return dbutils.food_to_dict(food, with_photos=True, with_children_ids=True), 200
 
     @login_required
     def put(self, food_id):
@@ -180,7 +180,7 @@ class FoodList(Resource):
                     .order_by(database.Food.id) \
                     .all()
             print(len(foods), 'entries found')
-        data = [dbutils.food_to_dict(f, True, True) for f in foods]
+        data = [dbutils.food_to_dict(f, True, True, False) for f in foods]
         return data, 200
 
     @login_required
@@ -234,7 +234,7 @@ class FoodList(Resource):
         return {
             'ids': ids,
             'entities': [
-                dbutils.food_to_dict(f, True, True) for f in foods
+                dbutils.food_to_dict(f, True, True, False) for f in foods
             ]
         }, 201
 
