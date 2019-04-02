@@ -138,9 +138,7 @@ class Food(Resource):
                 "error": "Unable to find food entry with ID %d." % food_id
             }, 404
 
-        database.db_session.delete(f)
-        database.db_session.flush()
-        database.db_session.commit()
+        dbutils.delete_food(f)
         return {"message": "Deleted successfully"}, 200
 
 class FoodList(Resource):
