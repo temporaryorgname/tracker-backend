@@ -89,6 +89,9 @@ class Food(Base):
         if 'protein' in data:
             self.protein = cast_none(data['protein'], float)
 
+        if 'parent_id' in data:
+            self.parent_id = data['parent_id']
+
         if 'premade' in data:
             self.premade = data['premade']
         if 'finished' in data:

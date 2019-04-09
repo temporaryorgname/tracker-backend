@@ -85,12 +85,18 @@ class BodyweightList(Resource):
         multiplier = 1
         if units == 'lbs':
             multiplier = 1/0.45359237
-        return [{
+        data = [{
             'id': w.id,
             'date': str(w.date),
             'time': str(w.time) if w.time is not None else '',
             'bodyweight': float(w.bodyweight)*multiplier
-        } for w in weights], 200
+        } for w in weights]
+        data = dict([(d['id'],d) for d in data])
+        return {
+            'entities': {
+                'bodyweight': data
+            }
+        }, 200
 
     @login_required
     def delete(self):
@@ -110,6 +116,7 @@ class BodyweightList(Resource):
                 .filter_by(**filter_params) \
                 .filter_by(user_id=current_user.get_id()) \
                 .all()
+        ids = [w.id for w in weights]
 
         if weights is None:
             return {
@@ -121,7 +128,10 @@ class BodyweightList(Resource):
         database.db_session.flush()
         database.db_session.commit()
         return {
-            'message': "Deleted successfully"
+            'message': "Deleted successfully",
+            'entities': {
+                'bodyweight': dict([(i,None) for i in ids])
+            }
         }, 200
 
     @login_required
@@ -192,8 +202,12 @@ class BodyweightList(Resource):
         database.db_session.commit()
 
         return {
-            'id': bw.id,
-            'message': 'Body weight added successfully.'
+            'message': 'Body weight added successfully.',
+            'entities': {
+                'bodyweight': {
+                    bw.id: data
+                }
+            }
         }, 200
 
 class Bodyweights(Resource):
@@ -236,7 +250,10 @@ class Bodyweights(Resource):
         database.db_session.flush()
         database.db_session.commit()
         return {
-            'message': "Deleted successfully"
+            'message': "Deleted successfully",
+            'entities': {
+                'bodyweight': [{weight.id: None}]
+            }
         }, 200
 
 class BodyweightSummary(Resource):
@@ -364,12 +381,14 @@ class BodyweightSummary(Resource):
             avg_weight /= count
 
         return {
-            'by_time': mean_by_hour,
-            'normalized_by_time': normalized_mean_by_hour,
-            'history': history,
-            'weight_change_per_day': weight_change_per_day,
-            'units': units,
-            'avg_weight': avg_weight
+            'summary': {
+                'by_time': mean_by_hour,
+                'normalized_by_time': normalized_mean_by_hour,
+                'history': history,
+                'weight_change_per_day': weight_change_per_day,
+                'units': units,
+                'avg_weight': avg_weight
+            }
         }, 200
 
 api.add_resource(BodyweightList, '/body/weights')

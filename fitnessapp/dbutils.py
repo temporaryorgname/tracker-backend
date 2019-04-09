@@ -17,7 +17,7 @@ if 'LOGS_PHOTO_BUCKET_NAME' in os.environ:
 else:
     PHOTO_BUCKET_NAME = 'dev-hhixl-food-photos-700'
 
-def food_to_dict(food, with_photos=False, with_children_ids=False, with_children_data=False):
+def food_to_dict(food, with_photos=True, with_children_ids=True, with_children_data=False):
     """ Convert a food entry to a dictionary, along with a list of photo IDs, and children
     """
     output = food.to_dict()
@@ -99,33 +99,36 @@ def update_food_from_dict(data, user_id, parent=None):
 
     database.db_session.flush()
 
-    ids = [int(f.id)]
+    changed_entities = [f]
 
     # Parse children
-    if 'children' in data:
+    if 'children' in data and data['children'] is not None:
         for child in data['children']:
-            ids += update_food_from_dict(child, user_id, parent=f)
+            changed_entities += update_food_from_dict(child, user_id, parent=f)
 
     # Commit once when everything is done.
     if parent is None:
         database.db_session.commit()
 
-    return ids
+    return changed_entities
 
 def delete_food(food, depth=0):
     """ Delete a food entry along with all children recursively.
     """
+    deleted_ids = [food.id]
     children = database.Food.query \
                 .filter_by(parent_id=food.id) \
                 .all()
     for c in children:
-        delete_food(c, depth=depth+1)
+        deleted_ids += delete_food(c, depth=depth+1)
 
     database.db_session.delete(food)
     database.db_session.flush()
 
     if depth == 0:
         database.db_session.commit()
+
+    return deleted_ids
 
 def search_food_frequent(search_term, user_id):
     """ Search the user's history for the search term, ordered by frequency.
@@ -282,7 +285,7 @@ def get_photo_exif(file_name):
     img = Image.open(file_name_original)
     return img._getexif()
 
-def photo_to_dict(photo, with_data=False, photo_size=32):
+def photo_to_dict(photo, with_data=True):
     output = photo.to_dict()
     if with_data:
         output['file_url'] = '/data/photos/%d/file' % photo.id

@@ -66,7 +66,11 @@ class Food(Resource):
                 .filter_by(user_id=current_user.get_id()) \
                 .filter_by(id=food_id) \
                 .one()
-        return dbutils.food_to_dict(food, with_photos=True, with_children_ids=True), 200
+        return {
+            'entities': {
+                'food': {food.id: dbutils.food_to_dict(food)}
+            }
+        }, 200
 
     @login_required
     def put(self, food_id):
@@ -99,8 +103,13 @@ class Food(Resource):
                   type: string
         """
         data = request.get_json()
-        dbutils.update_food_from_dict(data, current_user.get_id())
-        return {'message': 'success'}, 200
+        changed_entities = dbutils.update_food_from_dict(data, current_user.get_id())
+        return {
+            'message': 'success',
+            'entities': {
+                'food': dict([(f.id,dbutils.food_to_dict(f)) for f in changed_entities])
+            }
+        }, 200
 
     @login_required
     def delete(self, food_id):
@@ -138,8 +147,13 @@ class Food(Resource):
                 "error": "Unable to find food entry with ID %d." % food_id
             }, 404
 
-        dbutils.delete_food(f)
-        return {"message": "Deleted successfully"}, 200
+        deleted_ids = dbutils.delete_food(f)
+        return {
+            "message": "Deleted successfully",
+            "entities": {
+                "food": dict([(i,None) for i in deleted_ids])
+            }
+        }, 200
 
 class FoodList(Resource):
     @login_required
@@ -178,8 +192,12 @@ class FoodList(Resource):
                     .order_by(database.Food.id) \
                     .all()
             print(len(foods), 'entries found')
-        data = [dbutils.food_to_dict(f, True, True, False) for f in foods]
-        return data, 200
+        data = dict([(f.id,dbutils.food_to_dict(f)) for f in foods])
+        return {
+            'entities': {
+                'food': data
+            }
+        }, 200
 
     @login_required
     def post(self):
@@ -217,23 +235,23 @@ class FoodList(Resource):
         """
         data = request.get_json()
         try:
-            ids = dbutils.update_food_from_dict(data, user_id=current_user.get_id())
+            foods = dbutils.update_food_from_dict(data, user_id=current_user.get_id())
+            if 'parent_id' in data:
+                parent = database.Food.query \
+                        .filter_by(user_id=current_user.get_id()) \
+                        .filter(database.Food.id == data['parent_id']) \
+                        .one()
+                foods.append(parent)
         except Exception as e:
             print(traceback.format_exc())
             return {
                 'error': str(e)
             }, 400
 
-        foods = database.Food.query \
-                .filter_by(user_id=current_user.get_id()) \
-                .filter(database.Food.id.in_(ids)) \
-                .all()
-
         return {
-            'ids': ids,
-            'entities': [
-                dbutils.food_to_dict(f, True, True, False) for f in foods
-            ]
+            'entities': {
+                'food': dict([(f.id, dbutils.food_to_dict(f)) for f in foods])
+            }
         }, 201
 
     @login_required
@@ -264,8 +282,7 @@ class FoodList(Resource):
                   type: string
         """
         data = request.get_json()
-        print(type(data))
-        print(data)
+        deleted_ids = []
         for d in data:
             print("Requesting to delete entry %s." % d['id'])
 
@@ -276,9 +293,14 @@ class FoodList(Resource):
                     .first()
             if f is None:
                 continue
-            dbutils.delete_food(f)
+            deleted_ids += dbutils.delete_food(f)
 
-        return {"message": "Deleted successfully"}, 200
+        return {
+            "message": "Deleted successfully",
+            "entities": {
+                "food": dict([(i,None) for i in deleted_ids])
+            }
+        }, 200
 
 class FoodSearch(Resource):
     @login_required

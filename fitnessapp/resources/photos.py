@@ -168,7 +168,11 @@ class PhotoList(Resource):
                 .filter_by(user_id=current_user.get_id()) \
                 .filter_by(**filter_params) \
                 .all()
-        return [dbutils.photo_to_dict(p, with_data=True) for p in photos], 200
+        return {
+            'entities': {
+                'photos': dict([(p.id,dbutils.photo_to_dict(p)) for p in photos])
+            }
+        }, 200
 
     @login_required
     def post(self):
@@ -232,7 +236,14 @@ class PhotoList(Resource):
             database.db_session.flush()
             database.db_session.commit()
 
-            return {'id': photo.id},200
+            return {
+                'message': 'Photo uploaded successfully.',
+                'entities': {
+                    'photos': {
+                        photo.id: dbutils.photo_to_dict(photo)
+                    }
+                }
+            }, 200
 
     @login_required
     def delete(self):
@@ -266,10 +277,12 @@ class PhotoList(Resource):
         data = request.get_json()
         print(type(data))
         print(data)
+        deleted_ids = []
         for d in data:
             print("Requesting to delete entry %s." % d['id'])
 
             photo_id = d['id']
+            deleted_ids.append(photo_id)
             p = database.Photo.query \
                     .filter_by(id=photo_id) \
                     .filter_by(user_id=current_user.get_id()) \
@@ -281,56 +294,11 @@ class PhotoList(Resource):
             dbutils.delete_photo(p, commit=False)
 
         database.db_session.commit()
-        return {"message": "Deleted successfully"}, 200
-
-class PhotoData(Resource):
-    @login_required
-    def get(self, photo_id):
-        """ Return all photo entries matching the given criteria.
-        ---
-        tags:
-          - photos
-        parameters:
-          - name: photo_id 
-            in: path
-            type: number
-            required: true
-          - name: size
-            in: query
-            type: number
-            enum: [32,700]
-            description: Maximum size of either dimensions.
-        responses:
-          200:
-            description: A list of photo entries.
-            schema:
-              type: object
-              properties:
-                data:
-                  type: string
-                  description: A base64 representation of the image file.
-        """
-        allowed_sizes = [32,700]
-        size = request.args.get('size')
-        if size is None:
-            size = 32
-        size = int(size)
-        if size not in allowed_sizes:
-            return {
-                'error': 'Unsupported photo size. %d was provided, but only vaues %s are allowed.' % (size, allowed_sizes)
-            }, 400
-
-        try:
-            data = dbutils.get_photo_data_base64(photo_id, format='png', size=size)
-        except Exception as e:
-            return {
-                'error': str(e)
-            }, 400
-        # TODO: Return a application/octect-stream response instead of a JSON-wrapped base64 string.
         return {
-            'id': photo_id,
-            'format': 'png',
-            'data': data
+            "message": "Deleted successfully",
+            "entities": {
+                "photos": dict([(i,None) for i in deleted_ids])
+            }
         }, 200
 
 class PhotoFood(Resource):
@@ -407,7 +375,5 @@ class PhotoFile(Resource):
 
 api.add_resource(PhotoList, '/photos')
 api.add_resource(Photos, '/photos/<int:photo_id>')
-#api.add_resource(PhotoData, '/photos/<int:photo_id>/data')
-api.add_resource(PhotoData, '/photo_data/<int:photo_id>')
-api.add_resource(PhotoFood, '/photos/<int:photo_id>/food')
+#api.add_resource(PhotoFood, '/photos/<int:photo_id>/food')
 api.add_resource(PhotoFile, '/photos/<int:photo_id>/file')
