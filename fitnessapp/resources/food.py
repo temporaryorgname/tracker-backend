@@ -402,8 +402,10 @@ class FoodSummary(Resource):
             slope,_ = np.polyfit(x,y,1)
             calorie_change_per_day = slope*(24*60*60)
         return {
-            'history': [to_dict(f) for f in foods],
-            'calorie_change_per_day': calorie_change_per_day
+            'summary': {
+                'history': [to_dict(f) for f in foods],
+                'calorie_change_per_day': calorie_change_per_day
+            }
         }, 200
 
 class FoodAutogenerate(Resource):

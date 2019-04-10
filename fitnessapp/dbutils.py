@@ -293,11 +293,6 @@ def photo_to_dict(photo, with_data=True):
 
 def delete_photo(photo, commit=True):
     # Get food entries that reference this photo and remove the reference
-    food = database.Food().query \
-            .filter_by(photo_id = photo.id) \
-            .all()
-    for f in food:
-        f.photo_id = None
     database.db_session.delete(photo)
     database.db_session.flush()
     if commit:

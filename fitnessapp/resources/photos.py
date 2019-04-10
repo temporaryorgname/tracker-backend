@@ -125,7 +125,14 @@ class Photos(Resource):
             }, 404
         dbutils.delete_photo(p)
 
-        return {"message": "Deleted successfully"}, 200
+        return {
+            "message": "Deleted successfully",
+            "entities": {
+                "photos": {
+                    photo_id: None
+                }
+            }
+        }, 200
 
 class PhotoList(Resource):
     @login_required
