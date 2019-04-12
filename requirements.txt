@@ -14,7 +14,7 @@ Flask-RESTful==0.3.7
 Flask-SQLAlchemy==2.3.2
 gunicorn==19.9.0
 itsdangerous==0.24
-Jinja2==2.10
+Jinja2==2.10.1
 jmespath==0.9.3
 jsonschema==2.6.0
 MarkupSafe==1.0
