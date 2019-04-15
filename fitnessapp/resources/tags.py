@@ -58,8 +58,12 @@ class TagList(Resource):
         user_id = current_user.get_id()
         # TODO: Filter by user
         tags = database.Tag.query.all()
-        tags = [t.to_dict() for t in tags]
-        return tags, 200
+        tags = dict([(t.id, t.to_dict()) for t in tags])
+        return {
+            'entities': {
+                'tags': tags
+            }
+        }, 200
 
     @login_required
     def post(self):
@@ -104,7 +108,12 @@ class TagList(Resource):
         database.db_session.flush()
         database.db_session.commit()
 
-        return {'message': 'Success?', 'id': tag.id}, 200
+        return {
+                'message': 'Success?',
+                'entities': {
+                    'tags': {tag.id: tag.to_dict()}
+                }
+        }, 200
 
 class TagSearch(Resource):
     @login_required

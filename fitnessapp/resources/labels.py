@@ -58,7 +58,9 @@ class Labels(Resource):
             schema:
               $ref: '#/definitions/Label'
         """
-        return 'Not implemented', 501
+        return {
+                'error': 'Not implemented'
+        }, 501
 
     @login_required
     def put(self, label_id):
@@ -162,7 +164,9 @@ class LabelList(Resource):
               items:
                 $ref: '#/definitions/Label'
         """
-        pass
+        return {
+                'error': 'Not implemented'
+        }, 501
 
     @login_required
     def post(self):
