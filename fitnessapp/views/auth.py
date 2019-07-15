@@ -9,7 +9,7 @@ from flask_login import login_required, current_user, login_user
 import json
 import bcrypt
 
-from fitnessapp import database
+import tracker_database as database
 
 auth_bp = Blueprint('auth', __name__)
 

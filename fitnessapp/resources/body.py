@@ -14,7 +14,8 @@ import base64
 from io import BytesIO
 import numpy as np
 
-from fitnessapp import database
+import tracker_database as database
+from fitnessapp import db_session
 
 blueprint = Blueprint('body', __name__)
 api = Api(blueprint)
@@ -124,9 +125,9 @@ class BodyweightList(Resource):
             }, 404
 
         for w in weights:
-            database.db_session.delete(w)
-        database.db_session.flush()
-        database.db_session.commit()
+            db_session.delete(w)
+        db_session.flush()
+        db_session.commit()
         return {
             'message': "Deleted successfully",
             'entities': {
@@ -197,9 +198,9 @@ class BodyweightList(Resource):
 
         bw.user_id = current_user.get_id()
 
-        database.db_session.add(bw)
-        database.db_session.flush()
-        database.db_session.commit()
+        db_session.add(bw)
+        db_session.flush()
+        db_session.commit()
 
         return {
             'message': 'Body weight added successfully.',
@@ -246,9 +247,9 @@ class Bodyweights(Resource):
                 'error': "Unable to find requested bodyweight entry."
             }, 404
 
-        database.db_session.delete(weight)
-        database.db_session.flush()
-        database.db_session.commit()
+        db_session.delete(weight)
+        db_session.flush()
+        db_session.commit()
         return {
             'message': "Deleted successfully",
             'entities': {

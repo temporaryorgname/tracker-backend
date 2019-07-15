@@ -9,7 +9,8 @@ import boto3
 
 from flask import current_app as app
 
-from fitnessapp import database
+import tracker_database as database
+from fitnessapp import db_session
 
 s3 = boto3.resource('s3')
 if 'LOGS_PHOTO_BUCKET_NAME' in os.environ:
@@ -72,8 +73,8 @@ def update_food_from_dict(data, user_id, parent=None):
     else:
         f = database.Food.from_dict(data)
         f.user_id = user_id
-        database.db_session.add(f)
-        database.db_session.flush()
+        db_session.add(f)
+        db_session.flush()
 
     if parent is not None:
         f.parent_id = parent.id
@@ -97,7 +98,7 @@ def update_food_from_dict(data, user_id, parent=None):
                 raise Exception('Photo %d is already assigned to diet entry %d. Cannot reassign.' % (p.id, p.food_id))
             p.food_id = f.id
 
-    database.db_session.flush()
+    db_session.flush()
 
     changed_entities = [f]
 
@@ -108,7 +109,7 @@ def update_food_from_dict(data, user_id, parent=None):
 
     # Commit once when everything is done.
     if parent is None:
-        database.db_session.commit()
+        db_session.commit()
 
     return changed_entities
 
@@ -122,11 +123,11 @@ def delete_food(food, depth=0):
     for c in children:
         deleted_ids += delete_food(c, depth=depth+1)
 
-    database.db_session.delete(food)
-    database.db_session.flush()
+    db_session.delete(food)
+    db_session.flush()
 
     if depth == 0:
-        database.db_session.commit()
+        db_session.commit()
 
     return deleted_ids
 
@@ -293,10 +294,10 @@ def photo_to_dict(photo, with_data=True):
 
 def delete_photo(photo, commit=True):
     # Get food entries that reference this photo and remove the reference
-    database.db_session.delete(photo)
-    database.db_session.flush()
+    db_session.delete(photo)
+    db_session.flush()
     if commit:
-        database.db_session.commit()
+        db_session.commit()
 
 
 def autogoup_photos(photo_ids):
@@ -324,12 +325,12 @@ def autogenerate_food_entry(photos):
     food.date = date
     food.user_id = user_id
     food.photo_id = photo_id
-    database.db_session.add(food)
-    database.db_session.flush()
+    db_session.add(food)
+    db_session.flush()
     for p in photos:
         p.food_id = food.id
-    database.db_session.flush()
-    database.db_session.commit()
+    db_session.flush()
+    db_session.commit()
     print('Creating food entry', food.id)
 
 def autogenerate_food_entry_for_date(date):

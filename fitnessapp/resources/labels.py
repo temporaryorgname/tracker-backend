@@ -13,7 +13,7 @@ from PIL import Image
 import base64
 from io import BytesIO
 
-from fitnessapp import database
+import tracker_database as database
 
 blueprint = Blueprint('labels', __name__)
 api = Api(blueprint)

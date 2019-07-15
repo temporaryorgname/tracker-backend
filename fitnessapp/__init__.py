@@ -8,19 +8,7 @@ import sqlalchemy
 import json
 import traceback
 
-from fitnessapp.views.auth import auth_bp
-#from fitnessapp.views.user import user_bp
-#from fitnessapp.views.food import food_bp
-#from fitnessapp.views.body import body_bp
-
-from fitnessapp.resources.food import blueprint as food_bp
-from fitnessapp.resources.photos import blueprint as photos_bp
-from fitnessapp.resources.tags import blueprint as tags_bp
-from fitnessapp.resources.labels import blueprint as labels_bp
-from fitnessapp.resources.body import blueprint as body_bp
-from fitnessapp.resources.users import blueprint as user_bp
-
-from fitnessapp import database
+import tracker_database as database
 
 app = Flask(__name__,
         instance_relative_config=True,
@@ -32,13 +20,7 @@ CORS(app, supports_credentials=True)
 app.config.from_object('config')
 app.config.from_pyfile('config.py')
 
-app.register_blueprint(auth_bp, url_prefix='/api/auth')
-app.register_blueprint(user_bp, url_prefix='/api/data')
-app.register_blueprint(food_bp, url_prefix='/api/data')
-app.register_blueprint(photos_bp, url_prefix='/api/data')
-app.register_blueprint(tags_bp, url_prefix='/api/data')
-app.register_blueprint(labels_bp, url_prefix='/api/data')
-app.register_blueprint(body_bp, url_prefix='/api/data')
+db_session = database.init_db(database.get_db_uri())
 
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -79,7 +61,7 @@ def react_paths(path):
 @app.errorhandler(sqlalchemy.exc.TimeoutError)
 def timeouterror_handler(error):
     print(traceback.format_exc())
-    database.db_session.rollback()
+    db_session.rollback()
     return json.dumps({
         'error': 'Server too busy. Try again later.'
     }), 503
@@ -87,7 +69,23 @@ def timeouterror_handler(error):
 @app.errorhandler(Exception)
 def exception_handler(error):
     print(traceback.format_exc())
-    database.db_session.rollback()
+    db_session.rollback()
     return json.dumps({
         'error': 'Server error encountered'
     }), 500
+
+from fitnessapp.views.auth import auth_bp
+from fitnessapp.resources.food import blueprint as food_bp
+from fitnessapp.resources.photos import blueprint as photos_bp
+from fitnessapp.resources.tags import blueprint as tags_bp
+from fitnessapp.resources.labels import blueprint as labels_bp
+from fitnessapp.resources.body import blueprint as body_bp
+from fitnessapp.resources.users import blueprint as user_bp
+
+app.register_blueprint(auth_bp, url_prefix='/api/auth')
+app.register_blueprint(user_bp, url_prefix='/api/data')
+app.register_blueprint(food_bp, url_prefix='/api/data')
+app.register_blueprint(photos_bp, url_prefix='/api/data')
+app.register_blueprint(tags_bp, url_prefix='/api/data')
+app.register_blueprint(labels_bp, url_prefix='/api/data')
+app.register_blueprint(body_bp, url_prefix='/api/data')

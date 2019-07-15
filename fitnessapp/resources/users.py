@@ -15,7 +15,8 @@ import base64
 from io import BytesIO
 import bcrypt
 
-from fitnessapp import database
+import tracker_database as database
+from fitnessapp import db_session
 
 blueprint = Blueprint('users', __name__)
 api = Api(blueprint)
@@ -63,9 +64,9 @@ class UserList(Resource):
                 .filter_by(email=user.email) \
                 .all()
         if len(existing_user) == 0:
-            database.db_session.add(user)
-            database.db_session.flush()
-            database.db_session.commit()
+            db_session.add(user)
+            db_session.flush()
+            db_session.commit()
             flask_login.login_user(user)
         else:
             return {
@@ -76,9 +77,9 @@ class UserList(Resource):
         profile.id = user.id
         profile.display_name = data['name']
         profile.prefered_units = 'kg'
-        database.db_session.add(profile)
-        database.db_session.flush()
-        database.db_session.commit()
+        db_session.add(profile)
+        db_session.flush()
+        db_session.commit()
 
         return {
             'message': "User created"
@@ -223,7 +224,7 @@ class UserProfiles(Resource):
                 'error': str(e)
             }, 400
 
-        database.db_session.commit()
+        db_session.commit()
 
         return {
                 'message': 'success',

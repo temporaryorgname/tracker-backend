@@ -10,8 +10,9 @@ from flasgger import SwaggerView
 
 import datetime
 
-from fitnessapp import database
 from fitnessapp import dbutils
+import tracker_database as database
+from fitnessapp import db_session
 
 blueprint = Blueprint('photos', __name__)
 api = Api(blueprint)
@@ -85,8 +86,8 @@ class Photos(Resource):
         if data['group_id']:
             photo.group_id = int(data['group_id'])
 
-        database.db_session.flush()
-        database.db_session.commit()
+        db_session.flush()
+        db_session.commit()
 
         return {'message': 'Updated successfully'}, 200
 
@@ -225,8 +226,8 @@ class PhotoList(Resource):
             photo.date = request.form.get('date')
             photo.time = request.form.get('time')
 
-            database.db_session.add(photo)
-            database.db_session.flush()
+            db_session.add(photo)
+            db_session.flush()
 
             # Save photo
             file_name = str(photo.id)
@@ -240,8 +241,8 @@ class PhotoList(Resource):
                 if photo.date is None and 0x9003 in exif_data:
                     photo.date = exif_data[0x9003].split(' ')[0].replace(':','-')
             # Save file name
-            database.db_session.flush()
-            database.db_session.commit()
+            db_session.flush()
+            db_session.commit()
 
             return {
                 'message': 'Photo uploaded successfully.',
@@ -300,7 +301,7 @@ class PhotoList(Resource):
                 }, 404
             dbutils.delete_photo(p, commit=False)
 
-        database.db_session.commit()
+        db_session.commit()
         return {
             "message": "Deleted successfully",
             "entities": {

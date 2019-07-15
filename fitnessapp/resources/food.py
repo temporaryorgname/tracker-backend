@@ -18,8 +18,8 @@ import numpy as np
 import os
 import boto3
 
-from fitnessapp import database
 from fitnessapp import dbutils
+import tracker_database as database
 
 blueprint = Blueprint('food', __name__)
 api = Api(blueprint)
