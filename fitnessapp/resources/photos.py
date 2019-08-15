@@ -11,8 +11,8 @@ from flasgger import SwaggerView
 import datetime
 
 from fitnessapp import dbutils
-import tracker_database as database
-from fitnessapp import db_session
+from tracker_database import Photo, Food
+from fitnessapp.extensions import db
 
 blueprint = Blueprint('photos', __name__)
 api = Api(blueprint)
@@ -50,7 +50,7 @@ class Photos(Resource):
             schema:
               $ref: '#/definitions/Photo'
         """
-        photo = database.Photo.query \
+        photo = db.session.query(Photo) \
                 .filter_by(user_id=current_user.get_id()) \
                 .filter_by(id=photo_id) \
                 .one()
@@ -75,7 +75,7 @@ class Photos(Resource):
                   type: string
         """
         data = request.get_json()
-        photo = database.Photo.query \
+        photo = db.session.query(Photo) \
                 .filter_by(id=photo_id) \
                 .filter_by(user_id=current_user.get_id()) \
                 .first()
@@ -116,7 +116,7 @@ class Photos(Resource):
                 error:
                   type: string
         """
-        p = database.Photo.query \
+        p = db.session.query(Photo) \
                 .filter_by(id=photo_id) \
                 .filter_by(user_id=current_user.get_id()) \
                 .one()
@@ -172,7 +172,7 @@ class PhotoList(Resource):
             if val is not None:
                 filter_params[p] = val
         # Query database
-        photos = database.Photo.query \
+        photos = db.session.query(Photo) \
                 .filter_by(user_id=current_user.get_id()) \
                 .filter_by(**filter_params) \
                 .all()
@@ -291,7 +291,7 @@ class PhotoList(Resource):
 
             photo_id = d['id']
             deleted_ids.append(photo_id)
-            p = database.Photo.query \
+            p = db.session.query(Photo) \
                     .filter_by(id=photo_id) \
                     .filter_by(user_id=current_user.get_id()) \
                     .one()
@@ -328,7 +328,7 @@ class PhotoFood(Resource):
             schema:
               $ref: '#/definitions/Food'
         """
-        photo = database.Photo.query \
+        photo = db.session.query(Photo) \
                 .filter_by(user_id=current_user.get_id()) \
                 .filter_by(id=photo_id) \
                 .first()
@@ -338,13 +338,13 @@ class PhotoFood(Resource):
             }, 404
 
         if photo.group_id is None:
-            food = database.Food.query \
+            food = db.session.query(Food) \
                     .filter_by(user_id=current_user.get_id()) \
                     .filter_by(photo_id=photo_id) \
                     .filter_by(parent_id=None) \
                     .all()
         else:
-            food = database.Food.query \
+            food = db.session.query(Food) \
                     .filter_by(user_id=current_user.get_id()) \
                     .filter_by(photo_group_id=photo.group_id) \
                     .filter_by(parent_id=None) \
@@ -369,7 +369,7 @@ class PhotoFile(Resource):
           200:
             description: PNG File
         """
-        photo = database.Photo.query \
+        photo = db.session.query(Photo) \
                 .filter_by(user_id=current_user.get_id()) \
                 .filter_by(id=photo_id) \
                 .first()

@@ -1,48 +1,26 @@
 import flask
 from flask import Flask, jsonify
-from flask_cors import CORS
-import flask_login
-from flask_login import LoginManager
-from flasgger import Swagger
 import sqlalchemy
 import json
 import traceback
 
-import tracker_database as database
+from fitnessapp.extensions import login_manager, db, swagger, cors
+
+from tracker_database import User
 
 app = Flask(__name__,
         instance_relative_config=True,
-        static_url_path='/thisshouldneverbeused', # static_paths with the `static/*` path doesn't work without this.
+        # static_paths with the `static/*` path doesn't work without this.
+        static_url_path='/thisshouldneverbeused',
         static_folder='./static')
-swagger = Swagger(app)
 app.secret_key = 'super secret key'
-CORS(app, supports_credentials=True)
 app.config.from_object('config')
 app.config.from_pyfile('config.py')
 
-db_session = database.init_db(database.get_db_uri())
-
-login_manager = LoginManager()
+cors.init_app(app, supports_credentials=True)
+swagger.init_app(app)
+db.init_app(app)
 login_manager.init_app(app)
-
-@login_manager.user_loader
-def load_user(user_id):
-    return database.User.query.filter_by(id=user_id).first()
-
-@login_manager.request_loader
-def request_loader(request):
-    email = request.form.get('email')
-    password = request.form.get('password')
-    if email is None or password is None:
-        return
-
-    user = database.User.query.filter_by(email=email)
-    if user is None:
-        return
-    user.authenticated = password == user.password
-    print(user.id)
-
-    return user
 
 @app.route('/favicon.ico')
 def favicon_paths():
@@ -61,7 +39,7 @@ def react_paths(path):
 @app.errorhandler(sqlalchemy.exc.TimeoutError)
 def timeouterror_handler(error):
     print(traceback.format_exc())
-    db_session.rollback()
+    db.session.rollback()
     return json.dumps({
         'error': 'Server too busy. Try again later.'
     }), 503
@@ -69,7 +47,7 @@ def timeouterror_handler(error):
 @app.errorhandler(Exception)
 def exception_handler(error):
     print(traceback.format_exc())
-    db_session.rollback()
+    db.session.rollback()
     return json.dumps({
         'error': 'Server error encountered'
     }), 500

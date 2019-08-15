@@ -9,9 +9,29 @@ from flask_login import login_required, current_user, login_user
 import json
 import bcrypt
 
-import tracker_database as database
+from tracker_database import User
+from fitnessapp.extensions import login_manager, db
 
 auth_bp = Blueprint('auth', __name__)
+
+@login_manager.user_loader
+def load_user(user_id):
+    return db.session.query(User).filter_by(id=user_id).first()
+
+@login_manager.request_loader
+def request_loader(request):
+    email = request.form.get('email')
+    password = request.form.get('password')
+    if email is None or password is None:
+        return
+
+    user = db.session.query(User).filter_by(email=email)
+    if user is None:
+        return
+    user.authenticated = password == user.password
+    print(user.id)
+
+    return user
 
 @auth_bp.route('/login', methods=['POST'])
 def login():
@@ -21,7 +41,7 @@ def login():
     if 'permanent' in data:
         permanent = data['permanent']
         session.permanent = permanent
-    user = database.User.query.filter_by(email=email).first()
+    user = db.session.query(User).filter_by(email=email).first()
     if user is None:
         return json.dumps({'error': "Incorrect email/password"}), 403
     if bcrypt.checkpw(data['password'].encode('utf-8'), user.password.tobytes()):

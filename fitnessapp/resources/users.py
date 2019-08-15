@@ -15,8 +15,8 @@ import base64
 from io import BytesIO
 import bcrypt
 
-import tracker_database as database
-from fitnessapp import db_session
+from tracker_database import User, UserProfile, WeightUnitsEnum
+from fitnessapp.extensions import db
 
 blueprint = Blueprint('users', __name__)
 api = Api(blueprint)
@@ -56,30 +56,30 @@ class UserList(Resource):
         """
         data = request.get_json()
 
-        user = database.User()
+        user = User()
         user.email = data['email']
         user.password = bcrypt.hashpw(data['password'].encode('utf-8'), bcrypt.gensalt(12))
 
-        existing_user = database.User.query \
+        existing_user = db.session.query(User)\
                 .filter_by(email=user.email) \
                 .all()
         if len(existing_user) == 0:
-            db_session.add(user)
-            db_session.flush()
-            db_session.commit()
+            db.session.add(user)
+            db.session.flush()
+            db.session.commit()
             flask_login.login_user(user)
         else:
             return {
                 'error': "User already exists"
             }, 400
 
-        profile = database.UserProfile()
+        profile = UserProfile()
         profile.id = user.id
         profile.display_name = data['name']
-        profile.prefered_units = 'kg'
-        db_session.add(profile)
-        db_session.flush()
-        db_session.commit()
+        profile.prefered_units = WeightUnitsEnum.kgs
+        db.session.add(profile)
+        db.session.flush()
+        db.session.commit()
 
         return {
             'message': "User created"
@@ -128,7 +128,7 @@ class UserProfiles(Resource):
               $ref: '#/definitions/UserProfile'
         """
         user_id = int(user_id)
-        user = database.UserProfile.query \
+        user = db.session.query(UserProfile) \
                 .filter_by(id=user_id) \
                 .first()
 
@@ -144,7 +144,7 @@ class UserProfiles(Resource):
                 'gender': user.gender,
                 'last_activity': user.last_activity,
 
-                'prefered_units': user.prefered_units,
+                'prefered_units': user.prefered_units.name,
 
                 'target_weight': user.target_weight,
                 'target_calories': user.target_calories,
@@ -206,7 +206,7 @@ class UserProfiles(Resource):
                 'error': 'You do not have permission to modify this account'
             }, 400
 
-        user = database.UserProfile.query \
+        user = db.session.query(UserProfile) \
                 .filter_by(id=user_id) \
                 .filter_by(id=current_user.get_id()) \
                 .one()
@@ -224,7 +224,7 @@ class UserProfiles(Resource):
                 'error': str(e)
             }, 400
 
-        db_session.commit()
+        db.session.commit()
 
         return {
                 'message': 'success',

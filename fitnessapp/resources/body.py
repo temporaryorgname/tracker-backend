@@ -14,8 +14,8 @@ import base64
 from io import BytesIO
 import numpy as np
 
-import tracker_database as database
-from fitnessapp import db_session
+from tracker_database import Bodyweight, UserProfile, WeightUnitsEnum
+from fitnessapp.extensions import db
 
 blueprint = Blueprint('body', __name__)
 api = Api(blueprint)
@@ -70,21 +70,21 @@ class BodyweightList(Resource):
         page = request.args.get('page')
         if page is None:
             page = 0
-        weights = database.Bodyweight.query \
+        weights = db.session.query(Bodyweight) \
                 .filter_by(user_id=current_user.get_id()) \
-                .order_by(database.Bodyweight.date.desc()) \
-                .order_by(database.Bodyweight.time.desc()) \
+                .order_by(Bodyweight.date.desc()) \
+                .order_by(Bodyweight.time.desc()) \
                 .limit(10) \
                 .offset(page*10) \
                 .all()
-        units = database.UserProfile.query \
+        units = db.session.query(UserProfile) \
                 .with_entities(
-                        database.UserProfile.prefered_units
+                        UserProfile.prefered_units
                 )\
                 .filter_by(id=current_user.get_id()) \
                 .one()[0]
         multiplier = 1
-        if units == 'lbs':
+        if units == WeightUnitsEnum.lbs:
             multiplier = 1/0.45359237
         data = [{
             'id': w.id,
@@ -113,7 +113,7 @@ class BodyweightList(Resource):
                 'error': "No filters provided."
             }, 400
 
-        weights = database.Bodyweight.query \
+        weights = db.session.query(Bodyweight) \
                 .filter_by(**filter_params) \
                 .filter_by(user_id=current_user.get_id()) \
                 .all()
@@ -125,9 +125,9 @@ class BodyweightList(Resource):
             }, 404
 
         for w in weights:
-            db_session.delete(w)
-        db_session.flush()
-        db_session.commit()
+            db.session.delete(w)
+        db.session.flush()
+        db.session.commit()
         return {
             'message': "Deleted successfully",
             'entities': {
@@ -170,10 +170,10 @@ class BodyweightList(Resource):
                   type: string
         """
         data = request.get_json()
-        bw = database.Bodyweight()
-        units = database.UserProfile.query \
+        bw = Bodyweight()
+        units = db.session.query(UserProfile) \
                 .with_entities(
-                        database.UserProfile.prefered_units
+                        UserProfile.prefered_units
                 )\
                 .filter_by(id=current_user.get_id()) \
                 .one()[0]
@@ -193,14 +193,14 @@ class BodyweightList(Resource):
         if 'time' in data:
             bw.time= data['time']
 
-        if units == 'lbs':
+        if units == WeightUnitsEnum.lbs:
             bw.bodyweight *= 0.45359237
 
         bw.user_id = current_user.get_id()
 
-        db_session.add(bw)
-        db_session.flush()
-        db_session.commit()
+        db.session.add(bw)
+        db.session.flush()
+        db.session.commit()
 
         return {
             'message': 'Body weight added successfully.',
@@ -237,7 +237,7 @@ class Bodyweights(Resource):
                 error:
                   type: string
         """
-        weight = database.Bodyweight.query \
+        weight = db.session.query(Bodyweight) \
                 .filter_by(id=entry_id) \
                 .filter_by(user_id=current_user.get_id()) \
                 .first()
@@ -247,9 +247,9 @@ class Bodyweights(Resource):
                 'error': "Unable to find requested bodyweight entry."
             }, 404
 
-        db_session.delete(weight)
-        db_session.flush()
-        db_session.commit()
+        db.session.delete(weight)
+        db.session.flush()
+        db.session.commit()
         return {
             'message': "Deleted successfully",
             'entities': {
@@ -283,21 +283,21 @@ class BodyweightSummary(Resource):
                       items: number
                       description: Evenly-spaced bodyweight where the first data point is on `start_date` and the last is on `end_date`.
         """
-        weights = database.Bodyweight.query \
+        weights = db.session.query(Bodyweight) \
                 .filter_by(user_id=current_user.get_id()) \
-                .filter(database.Bodyweight.time.isnot(None)) \
-                .filter(database.Bodyweight.bodyweight.isnot(None)) \
-                .order_by(database.Bodyweight.date) \
-                .order_by(database.Bodyweight.time) \
+                .filter(Bodyweight.time.isnot(None)) \
+                .filter(Bodyweight.bodyweight.isnot(None)) \
+                .order_by(Bodyweight.date) \
+                .order_by(Bodyweight.time) \
                 .all()
-        units = database.UserProfile.query \
+        units = db.session.query(UserProfile) \
                 .with_entities(
-                        database.UserProfile.prefered_units
+                        UserProfile.prefered_units
                 )\
                 .filter_by(id=current_user.get_id()) \
                 .one()[0]
         units_scale = 1
-        if units == 'lbs':
+        if units == WeightUnitsEnum.lbs:
             units_scale = 1/0.45359237
 
         # Compute mean weight by time of day
@@ -387,7 +387,7 @@ class BodyweightSummary(Resource):
                 'normalized_by_time': normalized_mean_by_hour,
                 'history': history,
                 'weight_change_per_day': weight_change_per_day,
-                'units': units,
+                'units': units.name,
                 'avg_weight': avg_weight
             }
         }, 200

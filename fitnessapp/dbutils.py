@@ -9,8 +9,8 @@ import boto3
 
 from flask import current_app as app
 
-import tracker_database as database
-from fitnessapp import db_session
+from tracker_database import Food, Photo
+from fitnessapp.extensions import db
 
 s3 = boto3.resource('s3')
 if 'LOGS_PHOTO_BUCKET_NAME' in os.environ:
@@ -25,9 +25,9 @@ def food_to_dict(food, with_photos=True, with_children_ids=True, with_children_d
 
     # Add photo data
     if with_photos:
-        photo_ids = database.Photo.query \
+        photo_ids = db.session.query(Photo) \
                 .with_entities(
-                        database.Photo.id
+                        Photo.id
                 )\
                 .filter_by(user_id=food.user_id) \
                 .filter_by(food_id=food.id) \
@@ -36,7 +36,7 @@ def food_to_dict(food, with_photos=True, with_children_ids=True, with_children_d
 
     # Add children data
     if with_children_ids:
-        children = database.Food.query \
+        children = db.session.query(Food) \
                 .filter_by(user_id=food.user_id) \
                 .filter_by(parent_id=food.id) \
                 .all()
@@ -44,7 +44,7 @@ def food_to_dict(food, with_photos=True, with_children_ids=True, with_children_d
             c.id for c in children
         ]
     if with_children_data:
-        children = database.Food.query \
+        children = db.session.query(Food) \
                 .filter_by(user_id=food.user_id) \
                 .filter_by(parent_id=food.id) \
                 .all()
@@ -65,16 +65,16 @@ def update_food_from_dict(data, user_id, parent=None):
     """
     # If editing an existing entry, load it up. Otherwise, create a new entry.
     if 'id' in data and data['id'] is not None:
-        f = database.Food.query \
+        f = db.session.query(Food) \
             .filter_by(id = data['id']) \
             .filter_by(user_id=user_id) \
             .first()
         f.update_from_dict(data)
     else:
-        f = database.Food.from_dict(data)
+        f = Food.from_dict(data)
         f.user_id = user_id
-        db_session.add(f)
-        db_session.flush()
+        db.session.add(f)
+        db.session.flush()
 
     if parent is not None:
         f.parent_id = parent.id
@@ -83,22 +83,22 @@ def update_food_from_dict(data, user_id, parent=None):
     if 'photo_ids' in data:
         # Unset food id
         if f.id is not None:
-            photos = database.Photo.query \
+            photos = db.session.query(Photo) \
                     .filter_by(food_id=f.id) \
-                    .filter(not_(database.Photo.id.in_(data['photo_ids']))) \
+                    .filter(not_(Photo.id.in_(data['photo_ids']))) \
                     .all()
             for p in photos:
                 p.food_id = None
         # Set food id
-        photos = database.Photo.query \
-                .filter(database.Photo.id.in_(data['photo_ids'])) \
+        photos = db.session.query(Photo) \
+                .filter(Photo.id.in_(data['photo_ids'])) \
                 .all()
         for p in photos:
             if p.food_id is not None and p.food_id != f.id:
                 raise Exception('Photo %d is already assigned to diet entry %d. Cannot reassign.' % (p.id, p.food_id))
             p.food_id = f.id
 
-    db_session.flush()
+    db.session.flush()
 
     changed_entities = [f]
 
@@ -109,7 +109,7 @@ def update_food_from_dict(data, user_id, parent=None):
 
     # Commit once when everything is done.
     if parent is None:
-        db_session.commit()
+        db.session.commit()
 
     return changed_entities
 
@@ -117,17 +117,17 @@ def delete_food(food, depth=0):
     """ Delete a food entry along with all children recursively.
     """
     deleted_ids = [food.id]
-    children = database.Food.query \
+    children = db.session.query(Food) \
                 .filter_by(parent_id=food.id) \
                 .all()
     for c in children:
         deleted_ids += delete_food(c, depth=depth+1)
 
-    db_session.delete(food)
-    db_session.flush()
+    db.session.delete(food)
+    db.session.flush()
 
     if depth == 0:
-        db_session.commit()
+        db.session.commit()
 
     return deleted_ids
 
@@ -135,23 +135,23 @@ def search_food_frequent(search_term, user_id):
     """ Search the user's history for the search term, ordered by frequency.
     Food items that have been logged more often will appear first.
     """
-    foods = database.Food.query \
+    foods = db.session.query(Food) \
             .with_entities(
-                    func.mode().within_group(database.Food.name),
-                    database.Food.quantity,
-                    database.Food.calories,
-                    database.Food.protein,
+                    func.mode().within_group(Food.name),
+                    Food.quantity,
+                    Food.calories,
+                    Food.protein,
                     func.count('*'),
-                    func.max(database.Food.date)
+                    func.max(Food.date)
             ) \
             .filter_by(user_id=user_id) \
-            .filter(not_(database.Food.name == '')) \
-            .filter(database.Food.name.ilike('%{0}%'.format(search_term))) \
+            .filter(not_(Food.name == '')) \
+            .filter(Food.name.ilike('%{0}%'.format(search_term))) \
             .group_by(
-                    func.lower(database.Food.name),
-                    database.Food.quantity,
-                    database.Food.calories,
-                    database.Food.protein,
+                    func.lower(Food.name),
+                    Food.quantity,
+                    Food.calories,
+                    Food.protein,
             ) \
             .order_by(func.count('*').desc()) \
             .limit(5) \
@@ -175,10 +175,10 @@ def search_food_frequent(search_term, user_id):
 def search_food_recent(search_term, user_id):
     """ Search the user's history for the search term and return the five most recent matching entries.
     """
-    foods = database.Food.query \
+    foods = db.session.query(Food) \
             .filter_by(user_id=user_id) \
-            .filter(database.Food.name.ilike('%{0}%'.format(search_term))) \
-            .order_by(database.Food.date.desc()) \
+            .filter(Food.name.ilike('%{0}%'.format(search_term))) \
+            .order_by(Food.date.desc()) \
             .limit(5) \
             .all()
     return [food_to_dict(f, with_children_data=True) for f in foods]
@@ -186,19 +186,19 @@ def search_food_recent(search_term, user_id):
 def search_food_premade(search_term, user_id):
     """ Search the user's history for the search term and return the five most recent matching entries.
     """
-    foods = database.Food.query \
+    foods = db.session.query(Food) \
             .filter_by(user_id=user_id) \
-            .filter(database.Food.premade == True) \
-            .filter(or_(database.Food.finished == False, database.Food.finished == None)) \
-            .filter(database.Food.name.ilike('%{0}%'.format(search_term))) \
-            .order_by(database.Food.date.desc()) \
+            .filter(Food.premade == True) \
+            .filter(or_(Food.finished == False, Food.finished == None)) \
+            .filter(Food.name.ilike('%{0}%'.format(search_term))) \
+            .order_by(Food.date.desc()) \
             .all()
     return [food_to_dict(f, with_children_data=True) for f in foods]
 
 
 def get_photo_file_name(photo_id, format='png', size=32):
     filename = str(photo_id)
-    fp = database.Photo.query \
+    fp = db.session.query(Photo) \
             .filter_by(id=photo_id) \
             .one()
     if fp is None:
@@ -294,10 +294,10 @@ def photo_to_dict(photo, with_data=True):
 
 def delete_photo(photo, commit=True):
     # Get food entries that reference this photo and remove the reference
-    db_session.delete(photo)
-    db_session.flush()
+    db.session.delete(photo)
+    db.session.flush()
     if commit:
-        db_session.commit()
+        db.session.commit()
 
 
 def autogoup_photos(photo_ids):
@@ -320,17 +320,17 @@ def autogenerate_food_entry(photos):
             raise Exception('Photos do not belong to the same user.')
     # Pass through classifiers or object detectors and see if it matches with any known foods
     # Create appropriate entry
-    food = database.Food()
+    food = Food()
     food.name = 'Unknown'
     food.date = date
     food.user_id = user_id
     food.photo_id = photo_id
-    db_session.add(food)
-    db_session.flush()
+    db.session.add(food)
+    db.session.flush()
     for p in photos:
         p.food_id = food.id
-    db_session.flush()
-    db_session.commit()
+    db.session.flush()
+    db.session.commit()
     print('Creating food entry', food.id)
 
 def autogenerate_food_entry_for_date(date):
