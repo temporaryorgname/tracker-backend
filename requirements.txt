@@ -16,6 +16,7 @@ gunicorn==19.9.0
 itsdangerous==0.24
 Jinja2==2.10.1
 jmespath==0.9.3
+joblib==0.13.2
 jsonschema==2.6.0
 MarkupSafe==1.0
 mistune==0.8.4
@@ -27,7 +28,11 @@ python-dateutil==2.7.3
 pytz==2018.7
 PyYAML==3.13
 s3transfer==0.1.13
+scikit-learn==0.21.3
+scipy==1.3.1
 six==1.11.0
 SQLAlchemy==1.3.3
--e git+https://github.com/temporaryorgname/database.git@de6aa0e33629a79b587bb4f82f7e3022e9ea5cfc#egg=tracker_database
+tqdm==4.35.0
+-e git+https://github.com/howardh/tracker-data.git@51267697487f652481683a8d5b32d9b6e826781a#egg=tracker_data
+-e git+https://github.com/temporaryorgname/database.git@2ebe59342ae33c60611e147d5e833e2c58e0ea6d#egg=tracker_database
 Werkzeug==0.14.1

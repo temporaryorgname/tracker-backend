@@ -86,8 +86,8 @@ class Photos(Resource):
         if data['group_id']:
             photo.group_id = int(data['group_id'])
 
-        db_session.flush()
-        db_session.commit()
+        db.session.flush()
+        db.session.commit()
 
         return {'message': 'Updated successfully'}, 200
 
@@ -219,15 +219,15 @@ class PhotoList(Resource):
             return "No file name.", 400
         if file:
             # Create food entry
-            photo = database.Photo()
+            photo = Photo()
             photo.file_name = ""
             photo.user_id = current_user.get_id()
             photo.upload_time = datetime.datetime.utcnow()
             photo.date = request.form.get('date')
             photo.time = request.form.get('time')
 
-            db_session.add(photo)
-            db_session.flush()
+            db.session.add(photo)
+            db.session.flush()
 
             # Save photo
             file_name = str(photo.id)
@@ -241,8 +241,8 @@ class PhotoList(Resource):
                 if photo.date is None and 0x9003 in exif_data:
                     photo.date = exif_data[0x9003].split(' ')[0].replace(':','-')
             # Save file name
-            db_session.flush()
-            db_session.commit()
+            db.session.flush()
+            db.session.commit()
 
             return {
                 'message': 'Photo uploaded successfully.',
@@ -301,7 +301,7 @@ class PhotoList(Resource):
                 }, 404
             dbutils.delete_photo(p, commit=False)
 
-        db_session.commit()
+        db.session.commit()
         return {
             "message": "Deleted successfully",
             "entities": {
