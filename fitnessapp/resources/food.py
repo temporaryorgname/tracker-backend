@@ -431,14 +431,15 @@ class FoodPredict(Resource):
             siblings = []
         else:
             siblings = request.args['siblings'].split(',')
-        predictions = tracker_data.predict_entry_name(
+        predictions = tracker_data.predict_from_context(
                 db_session=db.session,
                 user_id=current_user.get_id(),
                 parent_name=parent,
                 sibling_entries=siblings
         )
+        print(predictions)
         return {
-                'data': [{'name': v, 'score': s} for v,s in predictions]
+                'data': predictions
         }, 200
 
 api.add_resource(FoodList, '/food')
