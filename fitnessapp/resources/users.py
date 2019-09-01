@@ -235,5 +235,54 @@ class UserProfiles(Resource):
                 }
         }, 200
 
+class UserPassword(Resource):
+    def post(self):
+        """ Change Password
+        ---
+        tags:
+          - users
+        parameters:
+          - in: body
+            required: true
+            schema:
+              type: object
+              properties:
+                password:
+                  type: string
+                new_password:
+                  type: string
+        responses:
+          200:
+            schema:
+              type: object
+              properties:
+                message:
+                  type: string
+          403:
+            schema:
+              type: object
+              properties:
+                error:
+                  type: string
+        """
+        data = request.get_json()
+
+        user = db.session.query(User)\
+                .filter_by(id=current_user.get_id()) \
+                .one()
+        if not bcrypt.checkpw(data['password'].encode('utf-8'), user.password.tobytes()):
+            return {
+                    'error': 'Incorrect password'
+            }, 403
+
+        user.password = bcrypt.hashpw(data['new_password'].encode('utf-8'), bcrypt.gensalt(12))
+
+        db.session.flush()
+        db.session.commit()
+        return {
+            'message': "Password updated successfully."
+        }, 200
+
 api.add_resource(UserList, '/users')
 api.add_resource(UserProfiles, '/user_profiles/<int:user_id>')
+api.add_resource(UserPassword, '/users/change_password')
