@@ -6,6 +6,7 @@ from PIL import Image
 from io import BytesIO
 import base64
 import boto3
+import re
 
 from flask import current_app as app
 
@@ -195,6 +196,55 @@ def search_food_premade(search_term, user_id):
             .all()
     return [food_to_dict(f, with_children_data=True) for f in foods]
 
+def search_food_nutrition(name, units, user_id):
+    """ Search the user's history for the search term and return the five most recent matching entries.
+    """
+    foods = db.session.query(Food) \
+            .filter(Food.name.ilike('%{0}%'.format(name))) \
+            .filter(Food.quantity.ilike('%{0}'.format(units))) \
+            .order_by(Food.date.desc()) \
+            .all()
+    # Compute average
+    def parse_quantity(qty):
+        m = re.search('([-]?[0-9]+[,.]?[0-9]*([\/][0-9]+[,.]?[0-9]*)*)([a-zA-Z]*)', qty)
+        if m is None:
+            return None, None
+        val = m.group(1)
+        if '/' in val:
+            num,den = val.split('/')
+            val = float(num)/float(den)
+        else:
+            val = float(val)
+        unit = m.group(3)
+        return val, unit
+    def normalize(f):
+        qty_val,qty_units = parse_quantity(f.quantity)
+        if qty_units != units:
+            return {'calories': None, 'protein': None}
+        def scale(v):
+            if v is None:
+                return None
+            return v/qty_val
+        return {
+                'calories': scale(f.calories),
+                'protein': scale(f.protein)
+        }
+    mean_entry = {
+            'calories': [], 'protein': [], 
+            'quantity': ('1 '+units).strip()
+    }
+    for f in foods:
+        nf = normalize(f)
+        if nf['calories'] is not None:
+            mean_entry['calories'].append(nf['calories'])
+        if nf['protein'] is not None:
+            mean_entry['protein'].append(nf['protein'])
+    mean_entry['calories'] = sum(mean_entry['calories'])/len(mean_entry['calories'])
+    mean_entry['protein'] = sum(mean_entry['protein'])/len(mean_entry['protein'])
+    return {
+            'all': [food_to_dict(f, with_children_data=True) for f in foods],
+            'mean': mean_entry
+    }
 
 def get_photo_file_name(photo_id, format='png', size=32):
     filename = str(photo_id)

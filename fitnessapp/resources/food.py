@@ -442,9 +442,73 @@ class FoodPredict(Resource):
                 'data': predictions
         }, 200
 
+class NutritionSearch(Resource):
+    @login_required
+    def get(self):
+        """ Search food entries for similar food items and return 
+        their nutritional values. The search is case-insensitive.
+        ---
+        tags:
+          - food
+        parameters:
+          - name: name
+            in: query
+            type: string
+            required: true
+          - name: units
+            in: query
+            type: string
+            required: false
+        responses:
+          200:
+            description: Food entries
+            schema:
+              properties:
+                history:
+                  description: Nutritional information from past entries.
+                  type: object
+                  properties:
+                    all:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          name:
+                            type: string
+                          quantity:
+                            type: string
+                          calories:
+                            type: number
+                          protein:
+                            type: number
+                    mean:
+                      type: object
+                      properties:
+                        quantity:
+                          type: string
+                        calories:
+                          type: number
+                        protein:
+                          type: number
+                usda:
+                  type: array
+                  description: Nutritional information from the USDA food composition database.
+        """
+        if 'name' not in request.args:
+            return 'Invalid request. A food name is required.', 400
+        name = request.args['name']
+        units = ''
+        if 'units' in request.args:
+            units = request.args['units']
+        return {
+            'history': dbutils.search_food_nutrition(name,units,current_user.get_id()),
+            'usda': []
+        }, 200
+
 api.add_resource(FoodList, '/food')
 api.add_resource(FoodEndpoint, '/food/<int:food_id>')
 api.add_resource(FoodSearch, '/food/search')
 api.add_resource(FoodSummary, '/food/summary')
 api.add_resource(FoodAutogenerate, '/food/autogenerate')
 api.add_resource(FoodPredict, '/food/predict')
+api.add_resource(NutritionSearch, '/nutrition/search')
