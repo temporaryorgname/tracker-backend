@@ -239,8 +239,14 @@ def search_food_nutrition(name, units, user_id):
             mean_entry['calories'].append(nf['calories'])
         if nf['protein'] is not None:
             mean_entry['protein'].append(nf['protein'])
-    mean_entry['calories'] = sum(mean_entry['calories'])/len(mean_entry['calories'])
-    mean_entry['protein'] = sum(mean_entry['protein'])/len(mean_entry['protein'])
+    if len(mean_entry['calories']) > 0:
+        mean_entry['calories'] = sum(mean_entry['calories'])/len(mean_entry['calories'])
+    else:
+        mean_entry['calories'] = None
+    if len(mean_entry['protein']) > 0:
+        mean_entry['protein'] = sum(mean_entry['protein'])/len(mean_entry['protein'])
+    else:
+        mean_entry['protein'] = None
     return {
             'all': [food_to_dict(f, with_children_data=True) for f in foods],
             'mean': mean_entry
