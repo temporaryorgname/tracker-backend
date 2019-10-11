@@ -149,9 +149,6 @@ class PhotoList(Resource):
           - name: user_id 
             in: query
             type: number
-          - name: group_id 
-            in: query
-            type: number
           - name: date
             in: query
             type: string
@@ -165,7 +162,7 @@ class PhotoList(Resource):
                 $ref: '#/definitions/Photo'
         """
         # Get filters from query parameters
-        filterable_params = ['id', 'user_id', 'date', 'group_id']
+        filterable_params = ['id', 'user_id', 'date']
         filter_params = {}
         for p in filterable_params:
             val = request.args.get(p)
