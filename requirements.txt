@@ -33,6 +33,6 @@ scipy==1.3.1
 six==1.11.0
 SQLAlchemy==1.3.3
 tqdm==4.35.0
--e git+https://github.com/howardh/tracker-data.git@fdd26b5b65c5bc82e5e6496cb4c4e92643786596#egg=tracker_data
+-e git+https://github.com/howardh/tracker-data.git@54dc006ace39e21e6e090875761c78e5e32a786d#egg=tracker_data
 -e git+https://github.com/temporaryorgname/database.git@2ebe59342ae33c60611e147d5e833e2c58e0ea6d#egg=tracker_database
 Werkzeug==0.14.1
