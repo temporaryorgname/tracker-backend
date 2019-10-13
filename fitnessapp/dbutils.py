@@ -259,6 +259,8 @@ def get_photo_file_name(photo_id, format='png', size=32):
             .one()
     if fp is None:
         raise Exception("File ID not found.")
+    if not os.path.isdir(app.config['UPLOAD_FOLDER']):
+        os.makedirs(app.config['UPLOAD_FOLDER'])
 
     local_file_name = os.path.join(
                 app.config['UPLOAD_FOLDER'],
