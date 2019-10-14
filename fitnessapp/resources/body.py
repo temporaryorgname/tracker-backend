@@ -305,6 +305,7 @@ class BodyweightSummary(Resource):
         hourly_stats = tracker_data.bodyweight.compute_hourly_stats(
                 db.session, user_id=current_user.get_id())
         hourly_mean = [w*units_scale for w in hourly_stats[0]]
+        hourly_std = [s*units_scale for s in hourly_stats[1]]
 
         # Compute history
         num_buckets = 20
@@ -359,7 +360,8 @@ class BodyweightSummary(Resource):
 
         return {
             'summary': {
-                'by_time': hourly_mean,
+                'hourly_mean': hourly_mean,
+                'hourly_std': hourly_std,
                 'history': history,
                 'weight_change_per_day': weight_change_per_day,
                 'units': units.name,
