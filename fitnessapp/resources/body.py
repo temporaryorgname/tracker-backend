@@ -204,6 +204,8 @@ class BodyweightList(Resource):
         db.session.flush()
         db.session.commit()
 
+        data['id'] = bw.id
+
         return {
             'message': 'Body weight added successfully.',
             'entities': {
@@ -255,7 +257,7 @@ class Bodyweights(Resource):
         return {
             'message': "Deleted successfully",
             'entities': {
-                'bodyweight': [{weight.id: None}]
+                'bodyweight': {weight.id: None}
             }
         }, 200
 
