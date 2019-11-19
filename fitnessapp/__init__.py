@@ -52,7 +52,7 @@ def exception_handler(error):
         'error': 'Server error encountered'
     }), 500
 
-from fitnessapp.views.auth import auth_bp
+from fitnessapp.resources.auth import auth_bp
 from fitnessapp.resources.food import blueprint as food_bp
 from fitnessapp.resources.photos import blueprint as photos_bp
 from fitnessapp.resources.tags import blueprint as tags_bp
