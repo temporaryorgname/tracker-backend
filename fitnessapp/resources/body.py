@@ -145,6 +145,7 @@ class BodyweightList(Resource):
           - body
         parameters:
           - in: body
+            name: body
             required: true
             schema:
               type: object

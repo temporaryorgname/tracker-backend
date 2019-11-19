@@ -59,6 +59,8 @@ from fitnessapp.resources.tags import blueprint as tags_bp
 from fitnessapp.resources.labels import blueprint as labels_bp
 from fitnessapp.resources.body import blueprint as body_bp
 from fitnessapp.resources.users import blueprint as user_bp
+from fitnessapp.resources.workout import blueprint as workout_bp
+from fitnessapp.resources.exercises import blueprint as exercise_bp
 
 app.register_blueprint(auth_bp, url_prefix='/api/auth')
 app.register_blueprint(user_bp, url_prefix='/api/data')
@@ -67,3 +69,5 @@ app.register_blueprint(photos_bp, url_prefix='/api/data')
 app.register_blueprint(tags_bp, url_prefix='/api/data')
 app.register_blueprint(labels_bp, url_prefix='/api/data')
 app.register_blueprint(body_bp, url_prefix='/api/data')
+app.register_blueprint(workout_bp, url_prefix='/api/data')
+app.register_blueprint(exercise_bp, url_prefix='/api/data')
