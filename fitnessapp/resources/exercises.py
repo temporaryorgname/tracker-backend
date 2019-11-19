@@ -21,7 +21,7 @@ blueprint = Blueprint('exercises', __name__)
 api = Api(blueprint)
 
 class ExerciseList(Resource):
-    #@login_required
+    @login_required
     def get(self):
         """ Return exercises.
         ---
@@ -56,7 +56,7 @@ class ExerciseList(Resource):
             }
         }, 200
 
-    #@login_required
+    @login_required
     def post(self):
         """ Create a new exercise
         ---
@@ -100,7 +100,7 @@ class ExerciseList(Resource):
         }, 200
 
 class Exercises(Resource):
-    #@login_required
+    @login_required
     def delete(self, entity_id):
         """ Delete an entry with the given ID.
         ---
@@ -144,7 +144,7 @@ class Exercises(Resource):
             }
         }, 200
 
-    #@login_required
+    @login_required
     def put(self, entity_id):
         """ Update an exercise entry with a new entry.
         ---

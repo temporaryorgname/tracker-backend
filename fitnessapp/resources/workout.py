@@ -21,7 +21,7 @@ blueprint = Blueprint('workoutset', __name__)
 api = Api(blueprint)
 
 class WorkoutSetList(Resource):
-    #@login_required
+    @login_required
     def get(self):
         """ Return workout sets.
         ---
@@ -96,7 +96,7 @@ class WorkoutSetList(Resource):
             }
         }, 200
 
-    #@login_required
+    @login_required
     def post(self):
         """ Create a new workout set entry.
         ---
@@ -141,7 +141,7 @@ class WorkoutSetList(Resource):
         }, 200
 
 class WorkoutSets(Resource):
-    #@login_required
+    @login_required
     def delete(self, entity_id):
         """ Delete an entry with the given ID.
         ---
@@ -186,7 +186,7 @@ class WorkoutSets(Resource):
             }
         }, 200
 
-    #@login_required
+    @login_required
     def put(self, entity_id):
         """ Update a workout set entry with a new entry.
         ---
