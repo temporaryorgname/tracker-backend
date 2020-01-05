@@ -69,9 +69,16 @@ class FoodEndpoint(Resource):
                 .filter_by(user_id=current_user.get_id()) \
                 .filter_by(id=food_id) \
                 .one()
+        foods = db.session.query(Food) \
+                .filter_by(user_id=current_user.get_id()) \
+                .filter_by(date=food.date) \
+                .order_by(Food.date.desc()) \
+                .order_by(Food.id) \
+                .all()
+        data = dict([(f.id,dbutils.food_to_dict(f)) for f in foods])
         return {
             'entities': {
-                'food': {food.id: dbutils.food_to_dict(food)}
+                'food': data
             }
         }, 200
 
