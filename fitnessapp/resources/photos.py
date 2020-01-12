@@ -222,6 +222,10 @@ class PhotoList(Resource):
             photo.upload_time = datetime.datetime.utcnow()
             photo.date = request.form.get('date')
             photo.time = request.form.get('time')
+            try:
+                photo.food_id = int(request.form.get('food_id'))
+            except:
+                pass
 
             db.session.add(photo)
             db.session.flush()
