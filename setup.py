@@ -24,6 +24,6 @@ setup(
         'tqdm',
         'Werkzeug==0.16',
         'tracker_data @ git+https://github.com/howardh/tracker-data.git@54dc006ace39e21e6e090875761c78e5e32a786d#egg=tracker_data',
-        'tracker_database @ git+https://github.com/temporaryorgname/database.git@2ebe59342ae33c60611e147d5e833e2c58e0ea6d#egg=tracker_database'
+        'tracker_database @ git+https://github.com/temporaryorgname/database.git@3e1cad967c0b5fd0a70ffc5dd6f77d9f2a7decd4#egg=tracker_database'
     ]
 )
