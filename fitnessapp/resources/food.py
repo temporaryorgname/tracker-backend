@@ -20,7 +20,7 @@ import boto3
 
 from fitnessapp import dbutils
 from fitnessapp.extensions import db
-from tracker_database import Food
+from tracker_database import Food, Photo
 
 import tracker_data
 
@@ -157,11 +157,21 @@ class FoodEndpoint(Resource):
                 "error": "Unable to find food entry with ID %d." % food_id
             }, 404
 
+        # Check for photos referencing this food item
+        photos = db.session.query(Photo) \
+                .filter_by(food_id=food_id) \
+                .filter_by(user_id=current_user.get_id()) \
+                .all()
+        for p in photos:
+            p.food_id = None
+        db.session.flush()
+
         deleted_ids = dbutils.delete_food(f)
         return {
             "message": "Deleted successfully",
             "entities": {
-                "food": dict([(i,None) for i in deleted_ids])
+                "food": dict([(i,None) for i in deleted_ids]),
+                "photos": dict([(p.id, dbutils.photo_to_dict(p)) for p in photos])
             }
         }, 200
 
@@ -244,6 +254,7 @@ class FoodList(Resource):
                   type: integer
         """
         data = request.get_json()
+        updated_photos = []
         try:
             foods = dbutils.update_food_from_dict(data, user_id=current_user.get_id())
             if 'parent_id' in data and data['parent_id'] is not None:
@@ -252,6 +263,15 @@ class FoodList(Resource):
                         .filter(Food.id == data['parent_id']) \
                         .one()
                 foods.append(parent)
+            if 'photo_ids' in data and len(foods) == 1:
+                for pid in data['photo_ids']:
+                    photo = db.session.query(Photo) \
+                            .filter_by(user_id=current_user.get_id()) \
+                            .filter(Photo.id == pid) \
+                            .one()
+                    photo.food_id = foods[0].id
+                    updated_photos.append(photo)
+                db.session.flush()
         except Exception as e:
             print(traceback.format_exc())
             return {
@@ -260,7 +280,8 @@ class FoodList(Resource):
 
         return {
             'entities': {
-                'food': dict([(f.id, dbutils.food_to_dict(f)) for f in foods])
+                'food': dict([(f.id, dbutils.food_to_dict(f)) for f in foods]),
+                'photos': dict([(p.id, dbutils.photo_to_dict(p)) for p in updated_photos])
             }
         }, 201
 

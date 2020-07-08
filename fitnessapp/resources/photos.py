@@ -58,7 +58,13 @@ class Photos(Resource):
             return {
                 'error': 'Photo ID not found'
             }, 404
-        return photo.to_dict(), 200
+        return {
+            'entities': {
+                'photos': {
+                    str(photo.id): dbutils.photo_to_dict(photo)
+                }
+            }
+        }, 200
 
     @login_required
     def put(self, photo_id):
