@@ -89,8 +89,8 @@ class Photos(Resource):
         if photo is None:
             return {'error': 'No photo found with this ID.'}, 404
 
-        if data['group_id']:
-            photo.group_id = int(data['group_id'])
+        if 'food_id' in data:
+            photo.food_id = data['food_id']
 
         db.session.flush()
         db.session.commit()
