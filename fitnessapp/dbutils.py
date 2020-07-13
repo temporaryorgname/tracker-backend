@@ -11,6 +11,8 @@ import re
 from flask import current_app as app
 
 from tracker_database import Food, Photo
+import tracker_data
+import tracker_data.food101.train
 from fitnessapp.extensions import db
 
 s3 = boto3.resource('s3')
@@ -357,6 +359,11 @@ def delete_photo(photo, commit=True):
     if commit:
         db.session.commit()
 
+
+def predict_food_name_from_photo(photo_id):
+    checkpoint_filename = '/home/howardh/checkpoints/checkpoint-6.pt'
+    photo_filename = get_photo_file_name(photo_id, size=700)
+    return tracker_data.food101.train.evaluate_image(checkpoint_filename, photo_filename)
 
 def autogoup_photos(photo_ids):
     # Group by time taken and photo similarity

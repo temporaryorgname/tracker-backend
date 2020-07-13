@@ -388,7 +388,28 @@ class PhotoFile(Resource):
         file_name = dbutils.get_photo_file_name(photo.id, format='png', size=700)
         return send_file(file_name, mimetype='image/png', attachment_filename='file.png')
 
+class PhotoPrediction(Resource):
+    @login_required
+    def get(self, photo_id):
+        """ Return the file saved under the given photo id.
+        ---
+        tags:
+          - photos
+        parameters:
+          - name: id
+            in: path
+            type: integer
+            required: true
+        responses:
+          200:
+            description: Prediction on photo contents
+        """
+        return {
+                'predictions': dbutils.predict_food_name_from_photo(photo_id)
+        }, 200
+
 api.add_resource(PhotoList, '/photos')
 api.add_resource(Photos, '/photos/<int:photo_id>')
 #api.add_resource(PhotoFood, '/photos/<int:photo_id>/food')
 api.add_resource(PhotoFile, '/photos/<int:photo_id>/file')
+api.add_resource(PhotoPrediction, '/photos/<int:photo_id>/prediction')
