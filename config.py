@@ -4,3 +4,4 @@ SESSION_TYPE = 'filesystem'
 SQLALCHEMY_POOL_SIZE = 10
 SQLALCHEMY_TRACK_MODIFICATIONS = False
 SQLALCHEMY_DATABASE_URI='postgresql://howardh:verysecurepassword@localhost:5432/howardh'
+LOGS_PHOTO_BUCKET_NAME='dev-hhixl-food-photos-700'
