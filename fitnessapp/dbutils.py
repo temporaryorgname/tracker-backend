@@ -16,10 +16,10 @@ import tracker_data.food101.train
 from fitnessapp.extensions import db
 
 s3 = boto3.resource('s3')
-if 'LOGS_PHOTO_BUCKET_NAME' in os.environ:
-    PHOTO_BUCKET_NAME = os.environ['LOGS_PHOTO_BUCKET_NAME']
+if 'LOGS_PHOTO_BUCKET_NAME' in app.config:
+    PHOTO_BUCKET_NAME = app.config['LOGS_PHOTO_BUCKET_NAME']
 else:
-    PHOTO_BUCKET_NAME = 'dev-hhixl-food-photos-700'
+    raise Exception('No bucket name specified in config file.')
 
 def food_to_dict(food, with_photos=True, with_children_ids=True, with_children_data=False):
     """ Convert a food entry to a dictionary, along with a list of photo IDs, and children
