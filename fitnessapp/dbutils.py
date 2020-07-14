@@ -16,10 +16,6 @@ import tracker_data.food101.train
 from fitnessapp.extensions import db
 
 s3 = boto3.resource('s3')
-if 'LOGS_PHOTO_BUCKET_NAME' in app.config:
-    PHOTO_BUCKET_NAME = app.config['LOGS_PHOTO_BUCKET_NAME']
-else:
-    raise Exception('No bucket name specified in config file.')
 
 def food_to_dict(food, with_photos=True, with_children_ids=True, with_children_data=False):
     """ Convert a food entry to a dictionary, along with a list of photo IDs, and children
@@ -279,7 +275,7 @@ def get_photo_file_name(photo_id, format='png', size=32):
         filename_resized = local_file_name
         try:
             with open(filename, "wb") as f:
-                s3.Bucket(PHOTO_BUCKET_NAME) \
+                s3.Bucket(app.config['LOGS_PHOTO_BUCKET_NAME']) \
                   .Object(str(photo_id)) \
                   .download_fileobj(f)
             img = Image.open(filename)
@@ -331,7 +327,7 @@ def save_photo_data(file, file_name, delete_local=True):
     img.save(file_name_700, 'jpeg') 
     # Upload small image to AWS
     with open(file_name_700, 'rb') as data:
-        s3.Bucket(PHOTO_BUCKET_NAME).put_object(Key=file_name, Body=data)
+        s3.Bucket(app.config['LOGS_PHOTO_BUCKET_NAME']).put_object(Key=file_name, Body=data)
     # Resize to tiny thumbnail size
     img.thumbnail((32,32))
     img.save(file_name_32, 'jpeg') 
